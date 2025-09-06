@@ -23,14 +23,9 @@ from datetime import datetime
 import os
 import time
 from shutil import rmtree
-from GMM import fit_gmm_torch
 from sklearn.manifold import TSNE
 from datasets_torch import get_cifar100_trainloader, get_cifar100_testloader, get_cifar10_trainloader, \
     get_cifar10_testloader, get_mnist_bothloader, get_facescrub_bothloader, get_SVHN_trainloader, get_SVHN_testloader, get_fmnist_bothloader, get_tinyimagenet_bothloader
-from sklearn.mixture import GaussianMixture
-# from cuml.mixture import GaussianMixture as cuGaussianMixture
-from sklearn.decomposition import PCA
-from sklearn.cluster import KMeans
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from joblib import Parallel, delayed
 
@@ -1613,71 +1608,23 @@ class MIA_train: # main class for every thing
                                 label_all.append(labels.cpu()) 
                     feature_infer_etime= time.time()
                     print(f"feature_infer_one_ep_time:{feature_infer_etime - feature_infer_stime} s")
+                # Attention-CEM epoch metric (no GMM/KMeans): compute avg log-variance per class using attention_cem
                 Z_all = torch.cat(Z_all, dim=0).cuda()
                 label_all = torch.cat(label_all, dim=0).cuda()
-                # print(Z_all.shape,label_all.shape)
-                
-                num_clusters=3
-                if 'sgm' not in self.arch:
-                    num_clusters=num_clusters*3
-
-                # gmm_params = fit_gmm_torch(Z_all, label_all, self.num_class, num_clusters)
-                log_det_list=[]
-                log_det_eslist=[]
-                for class_label in range(self.num_class):
-                    
-                    centroids=centroids_list[class_label].detach().clone()
-                    class_features = Z_all[label_all == class_label].detach().clone()
-                    
-                    # print(class_label,len(class_features),len(label_all[label_all == class_label]))
-                    if class_features.size(0) > num_clusters:
-                        # print(class_features.size(0))
-                        centroids, average_variance,cluster_covariances,cluster_weights=self.kmeans_cuda(class_features, num_clusters,centroids,random_ini_centers, num_iterations=50, tol=1e-4)  # 
-                        del average_variance
-
-                        # centroids, cluster_covariances, cluster_weights = self.apply_gmm_with_pca_and_inverse_transform(class_features,n_components=num_clusters, pca_components=None,iteration=10,ini_center=centroids)
-                        centroids_list[class_label] = centroids.clone().detach().cuda()
-                        cluster_weights=cluster_weights.clone().detach().cuda()
-                        # print(cluster_weights)
-                        for i in range(len(cluster_covariances)):
-                            # if cluster_weights<
-                            cluster_covariance=cluster_covariances[i].clone().detach().cuda()
-                            cluster_covariance = cluster_covariance + torch.eye(len(cluster_covariance)).cuda()*self.regularization_strength**2  # 确保矩阵是正定的
-                        # 使用Cholesky分解计算行列式的对数
-                            # L = torch.cholesky(cluster_covariance)
-                            # try:
-                            #     L = torch.cholesky(cluster_covariance)
-                            #     log_det_r = 2 * torch.sum(torch.log(torch.diag(L)))
-                            # except torch.linalg.LinAlgError:
-                            log_det_es = torch.mean(torch.log(torch.diag(cluster_covariance) + 1e-5))
-                            if torch.isnan(log_det_es).any():
-                                print("The tensor contains NaN values:")
-                                print(cluster_covariance)
-                            try:
-                                L = torch.linalg.cholesky(cluster_covariance)
-                                log_det_r = 2 * torch.mean(torch.log(torch.diag(L)))
-                            except torch.linalg.LinAlgError:
-                                log_det_r=log_det_es
-                                print('cannot calculate the det',log_det_es)
-                            if i==0:
-                                log_det = log_det_r*cluster_weights[i]
-                                log_det_e = log_det_es*cluster_weights[i]
-                            else:
-                                log_det+= log_det_r*cluster_weights[i]
-                                log_det_e += log_det_es*cluster_weights[i]
-                            
-                        # log_dets = torch.tensor([2 * torch.sum(torch.log(torch.diag(torch.cholesky(cov)))) for cov in cluster_covariances])
-                    # print(abs(centroids_list[class_label]).mean())
-                    log_det_list.append(log_det)
-                    log_det_eslist.append(log_det_e)
-                    del class_features,centroids
-                log_det_mean= torch.stack(log_det_list).mean()
-                log_detes_mean= torch.stack(log_det_eslist).mean()
+                N = Z_all.size(0)
+                features_flat = Z_all.view(N, -1)
+                if not hasattr(self, 'attention_cem'):
+                    self.attention_cem = SlotCrossAttentionCEM(
+                        feature_dim=features_flat.size(1),
+                        num_slots=8,
+                        num_heads=4,
+                        num_iterations=3
+                    ).to(features_flat.device)
+                with torch.no_grad():
+                    rob_loss_epoch, intra_epoch = self.attention_cem(features_flat, label_all, torch.unique(label_all))
                 feature_clst_etime= time.time()
-                print(f"feature_clst_one_ep_time:{feature_clst_etime-feature_infer_etime} s")
-                # print('the mean of mutal infor is:', log_det_mean)
-                self.logger.debug('the mean of mutal infor is:({log_det_mean:.3f}), the est mean of mutal infor is:({log_detes_mean:.3f})'.format(
-                log_det_mean=log_det_mean,log_detes_mean=log_detes_mean))
+                print(f"feature_attcem_one_ep_time:{feature_clst_etime-feature_infer_etime} s")
+                self.logger.debug('Attention-CEM epoch metric (avg logvar): {rob:.3f}'.format(rob=rob_loss_epoch))
                 if (epoch-1)%40 ==0:
                     Z_visual=Z_all[0:10000].detach().cpu()
                     label_visual=label_all[0:10000].detach().cpu()
@@ -1696,7 +1643,7 @@ class MIA_train: # main class for every thing
                     plt.colorbar(scatter)
                     plt.xlabel('t-SNE Component 1')
                     plt.ylabel('t-SNE Component 2')
-                    plt.title('t-SNE of n*8*8*8 features')
+                    plt.title('t-SNE of attention-CEM features (flattened)')
                     file_name=visual_dir+'/'+str(epoch)+'.png'
                     # 保存图像到 visual 文件夹
                     plt.savefig(file_name)

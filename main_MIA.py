@@ -5,7 +5,7 @@ import matplotlib
 matplotlib.use('Agg')  # 设置无显示后端，避免Qt错误
 import matplotlib.pyplot as plt
 import logging
-import model_training,model_training_paral_pruning
+import model_training
 from datasets_torch import *
 from utils import setup_logger
 
@@ -65,7 +65,7 @@ batch_size = args.batch_size
 cutting_layer = args.cutlayer
 num_client = args.num_client
 save_dir_name = "./{}/{}".format(args.folder, args.filename)
-mi = model_training_paral_pruning.MIA_train(args.arch, cutting_layer, batch_size,lambd=args.lambd, n_epochs = args.num_epochs, scheme = args.scheme,
+mi = model_training.MIA_train(args.arch, cutting_layer, batch_size,lambd=args.lambd, n_epochs = args.num_epochs, scheme = args.scheme,
                  num_client = num_client, dataset=args.dataset, save_dir=save_dir_name,random_seed=random_seed,
                  regularization_option=args.regularization, regularization_strength = args.regularization_strength, AT_regularization_option=args.AT_regularization, AT_regularization_strength = args.AT_regularization_strength, log_entropy=args.log_entropy,
                  initialize_different=args.initialize_different, learning_rate = args.learning_rate, local_lr = args.local_lr, gan_AE_type = args.gan_AE_type, 
