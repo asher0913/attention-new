@@ -135,51 +135,96 @@ class SlotAttention(nn.Module):
         return slots  # [B, S, slot_dim]
 
 
-# ----------------------------
-# 修正版 CrossAttention：支持共享 slots，一次性并行
-# ----------------------------
+# Drop-in 替换：内部加入 Flamingo 的 GATED XATTN-DENSE
+# 参考实现：lucidrains/flamingo-pytorch 与 OpenFlamingo（MIT）
+# 关键点：Pre-LN → Multi-Head Cross-Attn → tanh(g_attn)*out + residual → Pre-LN → FFN → tanh(g_ffn)*out + residual
+
 class CrossAttention(nn.Module):
-    def __init__(self, feature_dim, num_heads=4):
+    def __init__(self, feature_dim, num_heads=4, mlp_mult: int = 4, attn_dropout: float = 0.0, proj_dropout: float = 0.0):
         super().__init__()
+        assert feature_dim % num_heads == 0, "feature_dim must be divisible by num_heads"
         self.num_heads = num_heads
         self.feature_dim = feature_dim
-        assert feature_dim % num_heads == 0, "feature_dim must be divisible by num_heads"
         self.head_dim = feature_dim // num_heads
 
+        # ---- Pre-LN（与 OpenFlamingo / lucidrains 做法一致）----
+        self.ln_q = nn.LayerNorm(feature_dim)
+        self.ln_kv = nn.LayerNorm(feature_dim)
+        self.ln_ff = nn.LayerNorm(feature_dim)
+
+        # ---- QKV 投影 ----
         self.to_q = nn.Linear(feature_dim, feature_dim, bias=False)
         self.to_k = nn.Linear(feature_dim, feature_dim, bias=False)
         self.to_v = nn.Linear(feature_dim, feature_dim, bias=False)
-        self.to_out = nn.Linear(feature_dim, feature_dim)
+
+        # ---- 注意力与输出投影 ----
+        self.attn_drop = nn.Dropout(attn_dropout)
+        self.proj = nn.Linear(feature_dim, feature_dim)
+        self.proj_drop = nn.Dropout(proj_dropout)
+
+        # ---- GATED 残差（论文+开源实现：tanh(alpha) * 新增层输出 + 残差）----
+        # 初始化为 0，保证初始时不改变原有表示（稳定性与可恢复性）
+        self.alpha_xattn = nn.Parameter(torch.zeros(1))
+        self.alpha_ffn   = nn.Parameter(torch.zeros(1))
+
+        # ---- Dense / FFN（与 Flamingo 的 "…-DENSE" 对应）----
+        hidden = feature_dim * mlp_mult
+        self.ffn = nn.Sequential(
+            nn.Linear(feature_dim, hidden),
+            nn.GELU(),                      # OpenFlamingo 等实现常用 GELU
+            nn.Linear(hidden, feature_dim),
+        )
+
+        self.scale = self.head_dim ** -0.5
 
     def forward(self, query_features, slot_outputs):
         """
         query_features: [B, D]
-        slot_outputs: [S, D]（共享一组 slots）或 [B, S, D]
-        return: [B, D]
+        slot_outputs:   [S, D]（共享一组 slots）或 [B, S, D] 或 [1, S, D]
+        return:         [B, D]
         """
         B, D = query_features.shape
         H, d = self.num_heads, self.head_dim
         assert D == self.feature_dim
 
-        if slot_outputs.dim() == 2: # [S, D] -> 共享，扩到 [B, S, D]
+        # 统一 KV 形状到 [B, S, D]
+        if slot_outputs.dim() == 2:             # [S, D] -> 共享，扩到 [B, S, D]
             S = slot_outputs.shape[0]
             slot_outputs = slot_outputs.unsqueeze(0).expand(B, S, D)
         elif slot_outputs.dim() == 3 and slot_outputs.shape[0] == 1:
             slot_outputs = slot_outputs.expand(B, -1, -1)
-        elif slot_outputs.dim() != 3:
+        elif slot_outputs.dim() != 3 or slot_outputs.shape[0] != B:
             raise ValueError("slot_outputs must be [S,D] or [B,S,D] or [1,S,D]")
 
         S = slot_outputs.shape[1]
 
-        q = self.to_q(query_features).view(B, H, 1, d) # [B,H,1,d]
-        k = self.to_k(slot_outputs).view(B, S, H, d).transpose(1, 2) # [B,H,S,d]
-        v = self.to_v(slot_outputs).view(B, S, H, d).transpose(1, 2) # [B,H,S,d]
+        # ---------- GATED XATTN ----------
+        # Pre-LN
+        q_in = self.ln_q(query_features)        # [B, D]
+        kv_in = self.ln_kv(slot_outputs)        # [B, S, D]
 
-        attn = torch.matmul(q, k.transpose(-2, -1)) / (d ** 0.5) # [B,H,1,S]
+        # 线性映射 + 分头
+        q = self.to_q(q_in).view(B, H, 1, d)                    # [B, H, 1, d]   单 query token 情况
+        k = self.to_k(kv_in).view(B, S, H, d).transpose(1, 2)   # [B, H, S, d]
+        v = self.to_v(kv_in).view(B, S, H, d).transpose(1, 2)   # [B, H, S, d]
+
+        # scaled dot-product cross-attention
+        attn = torch.matmul(q, k.transpose(-2, -1)) * self.scale    # [B, H, 1, S]
         attn = F.softmax(attn, dim=-1)
-        out = torch.matmul(attn, v) # [B,H,1,d]
-        out = out.reshape(B, H * d) # [B,D]
-        return self.to_out(out) # [B,D]
+        attn = self.attn_drop(attn)
+
+        out = torch.matmul(attn, v).reshape(B, D)               # [B, D]
+        out = self.proj(out)
+        out = self.proj_drop(out)
+
+        # Gated residual（Flamingo：y = y + tanh(alpha_xattn) * cross_attn_out）
+        y = query_features + torch.tanh(self.alpha_xattn) * out  # [B, D]
+
+        # ---------- GATED DENSE（FFN） ----------
+        y_ff = self.ffn(self.ln_ff(y))                           # Pre-LN + FFN
+        y = y + torch.tanh(self.alpha_ffn) * y_ff                # 门控残差
+
+        return y  # [B, D]
 
 
 # ----------------------------
