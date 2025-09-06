@@ -158,9 +158,9 @@ class CrossAttention(nn.Module):
         self.proj_drop = nn.Dropout(proj_dropout)
 
         # ---- GATED 残差（论文+开源实现：tanh(alpha) * 新增层输出 + 残差）----
-        # 初始化为 0，保证初始时不改变原有表示（稳定性与可恢复性）
-        self.alpha_xattn = nn.Parameter(torch.zeros(1))
-        self.alpha_ffn   = nn.Parameter(torch.zeros(1))
+        # 初始化为小正值，避免早期完全抑制 cross-attn/FFN 的学习信号
+        self.alpha_xattn = nn.Parameter(torch.tensor(0.1))
+        self.alpha_ffn   = nn.Parameter(torch.tensor(0.1))
 
         # ---- Dense / FFN（与 Flamingo 的 "…-DENSE" 对应）----
         hidden = feature_dim * mlp_mult
@@ -249,7 +249,13 @@ class SlotCrossAttentionCEM(nn.Module):
         device, dtype = features.device, features.dtype
         total_logvar = torch.zeros((), device=device, dtype=dtype)
         total_mse = torch.zeros((), device=device, dtype=dtype)
-        valid = 0
+        total_weight = torch.zeros((), device=device, dtype=dtype)
+        B_total = features.size(0)
+
+        # threshold for log-entropy surrogate (align with previous KMeans/GMM style)
+        gamma = 1e-3
+        logvar_threshold = torch.tensor(self.var_threshold * (self.regularization_strength ** 2) + gamma,
+                                        device=device, dtype=dtype)
 
         for cls in unique_labels:
             cls_mask = (labels == cls)
@@ -278,18 +284,23 @@ class SlotCrossAttentionCEM(nn.Module):
                 mean_c = enhanced.mean(dim=0) # [D]
                 mse_c = F.mse_loss(enhanced, mean_c.expand_as(enhanced))
                 var_c = enhanced.var(dim=0, unbiased=False) # [D]
-                logvar_c = torch.log(var_c + self.eps_var).mean() # scalar
+                # conditional entropy surrogate with thresholding
+                logvar = torch.log(var_c + self.eps_var + gamma)
+                # Only penalize when above threshold (ReLU), then average across dims
+                ce_sur = F.relu(logvar - torch.log(logvar_threshold))
+                logvar_c = ce_sur.mean()
             else:
                 mse_c = torch.zeros((), device=device, dtype=dtype)
-                logvar_c = torch.tensor(0.01, device=device, dtype=dtype)
+                logvar_c = torch.tensor(0.0, device=device, dtype=dtype)
 
-            total_mse += mse_c
-            total_logvar += logvar_c
-            valid += 1
+            w = torch.tensor(float(M) / float(B_total), device=device, dtype=dtype)
+            total_mse += mse_c * w
+            total_logvar += logvar_c * w
+            total_weight += w
 
-        if valid > 0:
-            rob_loss = total_logvar / valid
-            intra_mse = total_mse / valid
+        if total_weight > 0:
+            rob_loss = total_logvar / total_weight
+            intra_mse = total_mse / total_weight
         else:
             rob_loss = torch.zeros((), device=device, dtype=dtype)
             intra_mse = torch.zeros((), device=device, dtype=dtype)
@@ -990,27 +1001,27 @@ class MIA_train: # main class for every thing
             z_private_n =z_private + noise
         else:
             z_private_n=z_private
-        # Perform various activation defenses, default no defense
+        # Perform various activation defenses, default no defense (apply on z_private_n which flows to server)
         if self.local_DP:
             if "laplace" in self.AT_regularization_option:
                 noise = torch.from_numpy(
-                    np.random.laplace(loc=0, scale=1 / self.dp_epsilon, size=z_private.size())).cuda()
-                z_private = z_private + noise.detach().float()
+                    np.random.laplace(loc=0, scale=1 / self.dp_epsilon, size=z_private_n.size())).cuda()
+                z_private_n = z_private_n + noise.detach().float()
             else:  # apply gaussian noise
                 delta = 10e-5
                 sigma = np.sqrt(2 * np.log(1.25 / delta)) * 1 / self.dp_epsilon
-                noise = sigma * torch.randn_like(z_private).cuda()
-                z_private = z_private + noise.detach().float()
+                noise = sigma * torch.randn_like(z_private_n).cuda()
+                z_private_n = z_private_n + noise.detach().float()
         if self.dropout_defense:
-            z_private = dropout_defense(z_private, self.dropout_ratio)
+            z_private_n = dropout_defense(z_private_n, self.dropout_ratio)
         if self.topkprune:
-            z_private = prune_defense(z_private, self.topkprune_ratio)
+            z_private_n = prune_defense(z_private_n, self.topkprune_ratio)
         if self.gan_noise:
             epsilon = self.alpha2
             
             self.local_AE_list[client_id].eval()
-            fake_act = z_private.clone()
-            grad = torch.zeros_like(z_private).cuda()
+            fake_act = z_private_n.clone()
+            grad = torch.zeros_like(z_private_n).cuda()
             fake_act = torch.autograd.Variable(fake_act.cuda(), requires_grad=True)
             x_recon = self.local_AE_list[client_id](fake_act)
             x_private = denormalize(x_private, self.dataset)
@@ -1025,7 +1036,7 @@ class MIA_train: # main class for every thing
                 loss = mse_loss(x_recon, x_private)
                 loss.backward()
                 grad += torch.sign(fake_act.grad)  
-            z_private = z_private - grad.detach() * epsilon
+            z_private_n = z_private_n - grad.detach() * epsilon
 
         output = self.f_tail(z_private_n)
 
@@ -1065,7 +1076,7 @@ class MIA_train: # main class for every thing
         # perform our proposed attacker-aware training
         if self.gan_regularizer and not self.gan_noise:
             self.local_AE_list[client_id].eval()
-            output_image = self.local_AE_list[client_id](z_private)
+            output_image = self.local_AE_list[client_id](z_private_n)
             
             x_private = denormalize(x_private, self.dataset)
             
@@ -1102,10 +1113,11 @@ class MIA_train: # main class for every thing
                 if self.load_from_checkpoint:
                     param.grad += self.lambd*encoder_gradients[name]
                 else:
-                    if (0.0004/self.train_scheduler.get_last_lr()[0])>4.9: #strat to enhance rob when lr is small and acc is high
+                    # Match previous scaling logic from paral_pruning for stability
+                    if (self.train_scheduler.get_last_lr()[0]) < 0.00041:
                         param.grad += self.lambd*encoder_gradients[name]
                     else:
-                        param.grad += self.lambd*encoder_gradients[name]*(0.0001/self.train_scheduler.get_last_lr()[0])
+                        param.grad += self.lambd*encoder_gradients[name] * (0.001 / self.train_scheduler.get_last_lr()[0])
             # print('Nonekl' in self.regularization_option)
             # print(self.regularization_option)
             # print('consider kl loss')
