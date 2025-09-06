@@ -227,11 +227,13 @@ class CrossAttention(nn.Module):
 # ----------------------------
 class SlotCrossAttentionCEM(nn.Module):
     def __init__(self, feature_dim=128, num_slots=8, num_heads=4, num_iterations=3,
-                 eps_var=1e-4):
+                 eps_var=1e-4, var_threshold=0.1, reg_strength=0.0):
         super().__init__()
         self.num_slots = num_slots
         self.feature_dim = feature_dim
         self.eps_var = eps_var
+        self.var_threshold = var_threshold
+        self.reg_strength = reg_strength
 
         self.slot_attention = SlotAttention(feature_dim, num_slots, num_iterations)
         self.cross_attention = CrossAttention(feature_dim, num_heads=num_heads)
@@ -254,7 +256,7 @@ class SlotCrossAttentionCEM(nn.Module):
 
         # threshold for log-entropy surrogate (align with previous KMeans/GMM style)
         gamma = 1e-3
-        logvar_threshold = torch.tensor(self.var_threshold * (self.regularization_strength ** 2) + gamma,
+        logvar_threshold = torch.tensor(self.var_threshold * (self.reg_strength ** 2) + gamma,
                                         device=device, dtype=dtype)
 
         for cls in unique_labels:
@@ -954,7 +956,10 @@ class MIA_train: # main class for every thing
                 feature_dim=feature_dim,
                 num_slots=8, # 可调
                 num_heads=4, # 保证 feature_dim % num_heads == 0
-                num_iterations=3
+                num_iterations=3,
+                eps_var=1e-4,
+                var_threshold=self.var_threshold,
+                reg_strength=self.regularization_strength,
             ).to(features.device)
 
         # 3) 计算 attention 版 CEM
@@ -1631,7 +1636,10 @@ class MIA_train: # main class for every thing
                         feature_dim=features_flat.size(1),
                         num_slots=8,
                         num_heads=4,
-                        num_iterations=3
+                        num_iterations=3,
+                        eps_var=1e-4,
+                        var_threshold=self.var_threshold,
+                        reg_strength=self.regularization_strength,
                     ).to(features_flat.device)
                 with torch.no_grad():
                     rob_loss_epoch, intra_epoch = self.attention_cem(features_flat, label_all, torch.unique(label_all))
