@@ -384,7 +384,7 @@ class MIA_train: # main class for every thing
                  gan_AE_type="custom", random_seed=123, client_sample_ratio = 1.0,
                  load_from_checkpoint = False, bottleneck_option="None", measure_option=False,
                  optimize_computation=1, decoder_sync = False, bhtsne_option = False, gan_loss_type = "SSIM", attack_confidence_score = False,
-                 ssim_threshold = 0.0, finetune_freeze_bn = False, load_from_checkpoint_server = False, source_task = "cifar100", 
+                 ssim_threshold = 0.0, var_threshold = 0.1, finetune_freeze_bn = False, load_from_checkpoint_server = False, source_task = "cifar100", 
                  save_activation_tensor = False, save_more_checkpoints = False, dataset_portion = 1.0, noniid = 1.0):
         torch.manual_seed(random_seed)
         np.random.seed(random_seed)
@@ -502,6 +502,7 @@ class MIA_train: # main class for every thing
         self.pretrain_epoch = 100
 
         self.ssim_threshold = ssim_threshold
+        self.var_threshold = var_threshold
         if "gan_adv" in self.AT_regularization_option:
             self.gan_regularizer = True
             if "step" in self.AT_regularization_option:
