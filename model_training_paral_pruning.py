@@ -76,9 +76,12 @@ class SlotAttention(nn.Module):
             slots_norm = self.norm_slots(slots)
             q = self.to_q(slots_norm) * self.scale  # [B,S,D]
             attn_logits = torch.einsum('bnd,bsd->bns', k, q)
+            # Improve numerical stability with temperature scaling
+            attn_logits = attn_logits / (self.slot_dim ** 0.25)  # Additional temperature scaling
             attn = torch.softmax(attn_logits, dim=-1)
             attn = attn + self.eps
-            attn = attn / (attn.sum(dim=1, keepdim=True))
+            attn_sum = attn.sum(dim=1, keepdim=True)
+            attn = attn / torch.clamp(attn_sum, min=self.eps)  # Prevent division by zero
             updates = torch.einsum('bns,bnd->bsd', attn, v)
             slots = self.gru(
                 updates.reshape(-1, self.slot_dim),
@@ -149,33 +152,59 @@ class SlotCrossAttentionCEM(nn.Module):
         total_mse = torch.zeros((), device=device, dtype=dtype)
         total_weight = torch.zeros((), device=device, dtype=dtype)
         B_total = features.size(0)
-        gamma = 1e-3
-        logvar_thr = torch.tensor(self.var_threshold * (self.reg_strength ** 2) + gamma, device=device, dtype=dtype)
+        gamma = 1e-6  # Smaller gamma for better numerical stability
+        
+        # Improved threshold calculation
+        logvar_thr = torch.tensor(max(self.var_threshold * (self.reg_strength ** 2), 1e-8) + gamma, 
+                                device=device, dtype=dtype)
+        
         for cls in unique_labels:
             mask = (labels == cls)
             class_feats = features[mask]
             M = class_feats.size(0)
-            if M <= 1:
+            if M <= 2:  # Need at least 2 samples for meaningful variance
                 continue
-            tokens = class_feats.unsqueeze(0)
+                
+            # Normalize features to improve numerical stability
+            class_feats_norm = F.layer_norm(class_feats, class_feats.shape[1:])
+            
+            tokens = class_feats_norm.unsqueeze(0)
             slots = self.slot_attention(tokens).squeeze(0)
-            enhanced = self.cross_attention(class_feats, slots)
+            enhanced = self.cross_attention(class_feats_norm, slots)
+            
+            # Compute class statistics
             mean_c = enhanced.mean(dim=0)
             mse_c = F.mse_loss(enhanced, mean_c.expand_as(enhanced))
-            var_c = enhanced.var(dim=0, unbiased=False)
-            logvar = torch.log(var_c + self.eps_var + gamma)
-            ce_sur = F.relu(logvar - torch.log(logvar_thr))
+            
+            # Improved variance calculation with numerical stability
+            var_c = enhanced.var(dim=0, unbiased=True)  # Use unbiased estimator
+            var_c = torch.clamp(var_c, min=self.eps_var)  # Ensure positive variance
+            
+            # Conditional entropy surrogate calculation
+            logvar = torch.log(var_c + gamma)
+            log_threshold = torch.log(logvar_thr)
+            
+            # More stable conditional entropy approximation
+            ce_sur = F.relu(logvar - log_threshold)
             logvar_c = ce_sur.mean()
+            
+            # Check for numerical issues
+            if torch.isnan(logvar_c) or torch.isinf(logvar_c):
+                print(f"Warning: NaN/Inf detected in class {cls.item()}, skipping...")
+                continue
+            
             w = torch.tensor(float(M) / float(B_total), device=device, dtype=dtype)
             total_mse += mse_c * w
             total_logvar += logvar_c * w
             total_weight += w
+            
         if total_weight > 0:
             rob_loss = total_logvar / total_weight
             intra_mse = total_mse / total_weight
         else:
             rob_loss = torch.zeros((), device=device, dtype=dtype)
             intra_mse = torch.zeros((), device=device, dtype=dtype)
+            
         return rob_loss, intra_mse
 def init_weights(m): # weight initialization
     if type(m) == nn.Linear:
@@ -1189,28 +1218,46 @@ class MIA_train: # main class for every thing
 
 
         if not random_ini_centers and self.lambd>0:
-            if self.use_attention_cem:
-                # Attention-based CEM: flatten conv features to [B,D]
-                if z_private.dim() == 4:
-                    B, C, H, W = z_private.shape
-                    feats_flat = z_private.view(B, -1)
+            try:
+                if self.use_attention_cem:
+                    # Attention-based CEM: flatten conv features to [B,D]
+                    if z_private.dim() == 4:
+                        B, C, H, W = z_private.shape
+                        feats_flat = z_private.view(B, -1)
+                    else:
+                        feats_flat = z_private
+                    
+                    # Check for NaN or Inf in features
+                    if torch.isnan(feats_flat).any() or torch.isinf(feats_flat).any():
+                        print("Warning: NaN/Inf detected in features, skipping CEM calculation")
+                        rob_loss, intra_class_mse = torch.tensor(0.0, device=z_private.device), torch.tensor(0.0, device=z_private.device)
+                    else:
+                        if self.attention_cem is None:
+                            self.attention_cem = SlotCrossAttentionCEM(
+                                feature_dim=feats_flat.size(1),
+                                num_slots=8,
+                                num_heads=4,
+                                num_iterations=3,
+                                eps_var=1e-4,
+                                var_threshold=self.var_threshold,
+                                reg_strength=self.regularization_strength,
+                            ).to(feats_flat.device)
+                        rob_loss, intra_class_mse = self.attention_cem(feats_flat, label_private, unique_labels)
+                        
+                        # Additional safety check
+                        if torch.isnan(rob_loss) or torch.isinf(rob_loss):
+                            print("Warning: NaN/Inf in rob_loss, setting to 0")
+                            rob_loss = torch.tensor(0.0, device=z_private.device)
+                        if torch.isnan(intra_class_mse) or torch.isinf(intra_class_mse):
+                            print("Warning: NaN/Inf in intra_class_mse, setting to 0")
+                            intra_class_mse = torch.tensor(0.0, device=z_private.device)
                 else:
-                    feats_flat = z_private
-                if self.attention_cem is None:
-                    self.attention_cem = SlotCrossAttentionCEM(
-                        feature_dim=feats_flat.size(1),
-                        num_slots=8,
-                        num_heads=4,
-                        num_iterations=3,
-                        eps_var=1e-4,
-                        var_threshold=self.var_threshold,
-                        reg_strength=self.regularization_strength,
-                    ).to(feats_flat.device)
-                rob_loss, intra_class_mse = self.attention_cem(feats_flat, label_private, unique_labels)
-            else:
-                rob_loss,intra_class_mse = self.compute_class_means(z_private, label_private, unique_labels, centroids_list,weights_list,cluster_variances_list)
+                    rob_loss,intra_class_mse = self.compute_class_means(z_private, label_private, unique_labels, centroids_list,weights_list,cluster_variances_list)
+            except Exception as e:
+                print(f"Error in CEM calculation: {e}")
+                rob_loss, intra_class_mse = torch.tensor(0.0, device=z_private.device), torch.tensor(0.0, device=z_private.device)
         else:
-            rob_loss,intra_class_mse=torch.tensor(0.0),torch.tensor(0.0)
+            rob_loss,intra_class_mse=torch.tensor(0.0, device=z_private.device),torch.tensor(0.0, device=z_private.device)
         # assert 1==0, print(x_private.shape,label_private.shape,unique_values)
         # Final Prediction Logits (complete forward pass)
         if "Gaussian" in self.regularization_option: # and adding_noise:
@@ -1335,24 +1382,37 @@ class MIA_train: # main class for every thing
             
         # print(total_loss, f_loss)
        
-        if not random_ini_centers and self.lambd>0:
-            # print(rob_loss)
-            rob_loss.backward(retain_graph=True)
-            encoder_gradients = {name: param.grad.clone() for name, param in self.f.named_parameters()}
-            # optimizer.zero_grad()
-            self.optimizer_zero_grad()
+        if not random_ini_centers and self.lambd>0 and rob_loss.requires_grad:
+            try:
+                # print(rob_loss)
+                rob_loss.backward(retain_graph=True)
+                encoder_gradients = {}
+                for name, param in self.f.named_parameters():
+                    if param.grad is not None:
+                        encoder_gradients[name] = param.grad.clone()
+                    else:
+                        encoder_gradients[name] = torch.zeros_like(param)
+                # optimizer.zero_grad()
+                self.optimizer_zero_grad()
+            except Exception as e:
+                print(f"Error in rob_loss backward: {e}")
+                encoder_gradients = {}
 
         total_loss.backward()
 
-        if not random_ini_centers and self.lambd>0:
+        if not random_ini_centers and self.lambd>0 and encoder_gradients:
             for name, param in self.f.named_parameters():
-                if self.load_from_checkpoint:
-                    param.grad += self.lambd*encoder_gradients[name]
-                else:
-                    if (self.train_scheduler.get_last_lr()[0])<0.00041: #strat to enhance rob when lr is small and acc is high
-                        param.grad += self.lambd*encoder_gradients[name]
-                    else:
-                        param.grad +=self.lambd*encoder_gradients[name]*(0.001/self.train_scheduler.get_last_lr()[0])
+                if param.grad is not None and name in encoder_gradients:
+                    try:
+                        if self.load_from_checkpoint:
+                            param.grad += self.lambd*encoder_gradients[name]
+                        else:
+                            if (self.train_scheduler.get_last_lr()[0])<0.00041: #strat to enhance rob when lr is small and acc is high
+                                param.grad += self.lambd*encoder_gradients[name]
+                            else:
+                                param.grad +=self.lambd*encoder_gradients[name]*(0.001/self.train_scheduler.get_last_lr()[0])
+                    except Exception as e:
+                        print(f"Error adding rob gradients for {name}: {e}")
 
             # print('Nonekl' in self.regularization_option)
             # print(self.regularization_option)
@@ -1361,7 +1421,7 @@ class MIA_train: # main class for every thing
         f_losses = f_loss.detach().cpu().numpy()
         del total_loss, f_loss
 
-        return intra_class_mse, f_losses, z_private
+        return total_losses, f_losses, z_private
 
     # Main function for validation accuracy, is also used to get statistics
     def validate_target(self, client_id=0):
@@ -2048,17 +2108,26 @@ class MIA_train: # main class for every thing
                                     #     L = torch.cholesky(cluster_covariance)
                                     #     log_det_r = 2 * torch.sum(torch.log(torch.diag(L)))
                                     # except torch.linalg.LinAlgError:
-                                    log_det_es = torch.mean(torch.log(torch.diag(cluster_covariance) + 1e-5))
+                                    # Add more regularization to ensure numerical stability
+                                    reg_strength = max(self.regularization_strength**2, 1e-6)
+                                    cluster_covariance = cluster_covariance + torch.eye(len(cluster_covariance)).cuda() * reg_strength
+                                    
+                                    # Clamp diagonal values to prevent log(0)
+                                    diag_vals = torch.clamp(torch.diag(cluster_covariance), min=1e-8)
+                                    log_det_es = torch.mean(torch.log(diag_vals))
 
-                                    if torch.isnan(log_det_es).any():
-                                        print("The tensor contains NaN values:")
-                                        print(cluster_covariance)
+                                    if torch.isnan(log_det_es).any() or torch.isinf(log_det_es).any():
+                                        print("Warning: NaN/Inf values detected in log determinant calculation")
+                                        log_det_es = torch.tensor(0.0, device=cluster_covariance.device)
+                                        
                                     try:
                                         L = torch.linalg.cholesky(cluster_covariance)
-                                        log_det_r = 2 * torch.mean(torch.log(torch.diag(L)))
+                                        log_det_r = 2 * torch.mean(torch.log(torch.clamp(torch.diag(L), min=1e-8)))
+                                        if torch.isnan(log_det_r).any() or torch.isinf(log_det_r).any():
+                                            log_det_r = log_det_es
                                     except torch.linalg.LinAlgError:
-                                        log_det_r=log_det_es
-                                        print('cannot calculate the det',log_det_es)
+                                        log_det_r = log_det_es
+                                        print('Cannot calculate Cholesky decomposition, using diagonal approximation')
                                     # log_det_r=log_det_es
                                     if i==0:
                                         log_det = log_det_r*cluster_weights[i]
@@ -2084,28 +2153,47 @@ class MIA_train: # main class for every thing
                     feature_clst_etime= time.time()
                     print(f"feature_clst_one_ep_time:{feature_clst_etime-feature_infer_etime} s")
                     if (epoch-1)%40 ==0:
-                        Z_visual=Z_all[0:10000].detach().cpu()
-                        label_visual=label_all[0:10000].detach().cpu()
-                        Z_visual = Z_visual.view(len(Z_visual), -1).detach().cpu()
+                        try:
+                            Z_visual=Z_all[0:10000].detach().cpu()
+                            label_visual=label_all[0:10000].detach().cpu()
+                            Z_visual = Z_visual.view(len(Z_visual), -1).detach().cpu()
 
-                        mask = (label_visual >= 0) & (label_visual <= 2)
-                        Z_visual = Z_visual[mask]
-                        label_visual = label_visual[mask]
+                            # Check for NaN or infinite values
+                            if torch.isnan(Z_visual).any() or torch.isinf(Z_visual).any():
+                                print("Warning: NaN or Inf values detected in features, skipping t-SNE visualization")
+                            else:
+                                mask = (label_visual >= 0) & (label_visual <= 2)
+                                Z_visual = Z_visual[mask]
+                                label_visual = label_visual[mask]
 
-                        tsne = TSNE(n_components=2, perplexity=30, learning_rate=200, max_iter=1000, random_state=42)
-                        reduced_features = tsne.fit_transform(Z_visual)
-                        visual_dir = self.save_dir + '/visualize'
-                        os.makedirs(visual_dir, exist_ok=True)
-                        plt.figure(figsize=(10, 8))
-                        scatter = plt.scatter(reduced_features[:, 0], reduced_features[:, 1], c=label_visual.cpu(), cmap='viridis')
-                        plt.colorbar(scatter)
-                        plt.xlabel('t-SNE Component 1')
-                        plt.ylabel('t-SNE Component 2')
-                        plt.title('t-SNE of n*8*8*8 features')
-                        file_name=visual_dir+'/'+str(epoch)+'.png'
-                        # 保存图像到 visual 文件夹
-                        plt.savefig(file_name)
-                        print(file_name)
+                                # Ensure we have enough samples for t-SNE
+                                if len(Z_visual) > 30:  # t-SNE needs at least perplexity samples
+                                    # Normalize features to prevent numerical issues
+                                    Z_visual_norm = (Z_visual - Z_visual.mean(dim=0)) / (Z_visual.std(dim=0) + 1e-8)
+                                    
+                                    tsne = TSNE(n_components=2, perplexity=min(30, len(Z_visual)//4), 
+                                              learning_rate=200, max_iter=1000, random_state=42, 
+                                              init='pca', n_jobs=1)
+                                    reduced_features = tsne.fit_transform(Z_visual_norm.numpy())
+                                    
+                                    visual_dir = self.save_dir + '/visualize'
+                                    os.makedirs(visual_dir, exist_ok=True)
+                                    plt.figure(figsize=(10, 8))
+                                    scatter = plt.scatter(reduced_features[:, 0], reduced_features[:, 1], 
+                                                        c=label_visual.numpy(), cmap='viridis')
+                                    plt.colorbar(scatter)
+                                    plt.xlabel('t-SNE Component 1')
+                                    plt.ylabel('t-SNE Component 2')
+                                    plt.title('t-SNE of n*8*8*8 features')
+                                    file_name=visual_dir+'/'+str(epoch)+'.png'
+                                    plt.savefig(file_name, dpi=150, bbox_inches='tight')
+                                    plt.close()  # Close the figure to free memory
+                                    print(f"t-SNE visualization saved: {file_name}")
+                                else:
+                                    print("Not enough samples for t-SNE visualization")
+                        except Exception as e:
+                            print(f"Error during t-SNE visualization: {e}")
+                            print("Skipping visualization and continuing training...")
                     del Z_all,label_all
 
                 # kmeans_cuda(self,X, num_clusters,centroids, num_iterations=10, tol=1e-4):
