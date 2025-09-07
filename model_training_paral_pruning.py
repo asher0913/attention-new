@@ -451,8 +451,8 @@ class MIA_train: # main class for every thing
                 print("Auto extract dropout ratio fail, use regularization_strength input as dropout ratio")
             print('dropout_ratio is:',self.dropout_ratio)
         else:
-        self.dropout_defense = False
-        self.dropout_ratio = AT_regularization_strength
+            self.dropout_defense = False
+            self.dropout_ratio = AT_regularization_strength
 
         if "topkprune" in self.AT_regularization_option:
             self.topkprune = True
