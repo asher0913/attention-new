@@ -35,6 +35,148 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from joblib import Parallel, delayed
+
+# ========================= Attention-CEM modules (for replacing GMM surrogate) =========================
+class SlotAttention(nn.Module):
+    def __init__(self, feature_dim, num_slots=8, num_iterations=3, eps: float = 1e-8, mlp_hidden_scale: int = 2, slot_dim: int = None):
+        super().__init__()
+        self.num_slots = num_slots
+        self.num_iterations = num_iterations
+        self.feature_dim = feature_dim
+        self.eps = eps
+        self.slot_dim = feature_dim if slot_dim is None else slot_dim
+        self.slot_mu = nn.Parameter(torch.empty(1, 1, self.slot_dim))
+        self.slot_log_sigma = nn.Parameter(torch.empty(1, 1, self.slot_dim))
+        nn.init.xavier_uniform_(self.slot_mu)
+        nn.init.xavier_uniform_(self.slot_log_sigma)
+        self.to_q = nn.Linear(self.slot_dim, self.slot_dim, bias=False)
+        self.to_k = nn.Linear(feature_dim, self.slot_dim, bias=False)
+        self.to_v = nn.Linear(feature_dim, self.slot_dim, bias=False)
+        self.gru = nn.GRUCell(self.slot_dim, self.slot_dim)
+        self.mlp = nn.Sequential(
+            nn.Linear(self.slot_dim, self.slot_dim * mlp_hidden_scale),
+            nn.ReLU(inplace=True),
+            nn.Linear(self.slot_dim * mlp_hidden_scale, self.slot_dim),
+        )
+        self.norm_inputs = nn.LayerNorm(feature_dim)
+        self.norm_slots = nn.LayerNorm(self.slot_dim)
+        self.norm_mlp = nn.LayerNorm(self.slot_dim)
+        self.scale = self.slot_dim ** -0.5
+
+    def forward(self, inputs: torch.Tensor):
+        B, N, D = inputs.shape
+        inputs = self.norm_inputs(inputs)
+        k = self.to_k(inputs)
+        v = self.to_v(inputs)
+        mu = self.slot_mu.expand(B, self.num_slots, -1)
+        sigma = self.slot_log_sigma.exp().expand(B, self.num_slots, -1)
+        slots = mu + sigma * torch.randn_like(mu)
+        for _ in range(self.num_iterations):
+            slots_prev = slots
+            slots_norm = self.norm_slots(slots)
+            q = self.to_q(slots_norm) * self.scale  # [B,S,D]
+            attn_logits = torch.einsum('bnd,bsd->bns', k, q)
+            attn = torch.softmax(attn_logits, dim=-1)
+            attn = attn + self.eps
+            attn = attn / (attn.sum(dim=1, keepdim=True))
+            updates = torch.einsum('bns,bnd->bsd', attn, v)
+            slots = self.gru(
+                updates.reshape(-1, self.slot_dim),
+                slots_prev.reshape(-1, self.slot_dim)
+            )
+            slots = slots.reshape(B, self.num_slots, self.slot_dim)
+            slots = slots + self.mlp(self.norm_mlp(slots))
+        return slots  # [B,S,D]
+
+class CrossAttention(nn.Module):
+    def __init__(self, feature_dim, num_heads=4, mlp_mult: int = 4):
+        super().__init__()
+        assert feature_dim % num_heads == 0
+        self.num_heads = num_heads
+        self.feature_dim = feature_dim
+        self.head_dim = feature_dim // num_heads
+        self.ln_q = nn.LayerNorm(feature_dim)
+        self.ln_kv = nn.LayerNorm(feature_dim)
+        self.ln_ff = nn.LayerNorm(feature_dim)
+        self.to_q = nn.Linear(feature_dim, feature_dim, bias=False)
+        self.to_k = nn.Linear(feature_dim, feature_dim, bias=False)
+        self.to_v = nn.Linear(feature_dim, feature_dim, bias=False)
+        self.proj = nn.Linear(feature_dim, feature_dim)
+        self.alpha_xattn = nn.Parameter(torch.tensor(0.1))
+        self.alpha_ffn = nn.Parameter(torch.tensor(0.1))
+        hidden = feature_dim * mlp_mult
+        self.ffn = nn.Sequential(
+            nn.Linear(feature_dim, hidden),
+            nn.GELU(),
+            nn.Linear(hidden, feature_dim),
+        )
+        self.scale = (self.head_dim) ** -0.5
+
+    def forward(self, query_features, slot_outputs):
+        B, D = query_features.shape
+        if slot_outputs.dim() == 2:
+            slot_outputs = slot_outputs.unsqueeze(0).expand(B, -1, -1)
+        S = slot_outputs.size(1)
+        H, d = self.num_heads, self.head_dim
+        q_in = self.ln_q(query_features)
+        kv_in = self.ln_kv(slot_outputs)
+        q = self.to_q(q_in).view(B, H, 1, d)
+        k = self.to_k(kv_in).view(B, S, H, d).transpose(1, 2)
+        v = self.to_v(kv_in).view(B, S, H, d).transpose(1, 2)
+        attn = torch.matmul(q, k.transpose(-2, -1)) * self.scale
+        attn = torch.softmax(attn, dim=-1)
+        out = torch.matmul(attn, v).reshape(B, D)
+        out = self.proj(out)
+        y = query_features + torch.tanh(self.alpha_xattn) * out
+        y_ff = self.ffn(self.ln_ff(y))
+        y = y + torch.tanh(self.alpha_ffn) * y_ff
+        return y
+
+class SlotCrossAttentionCEM(nn.Module):
+    def __init__(self, feature_dim=128, num_slots=8, num_heads=4, num_iterations=3,
+                 eps_var=1e-4, var_threshold=0.1, reg_strength=0.0):
+        super().__init__()
+        self.slot_attention = SlotAttention(feature_dim, num_slots, num_iterations)
+        self.cross_attention = CrossAttention(feature_dim, num_heads=num_heads)
+        self.feature_dim = feature_dim
+        self.eps_var = eps_var
+        self.var_threshold = var_threshold
+        self.reg_strength = reg_strength
+
+    def forward(self, features, labels, unique_labels):
+        device, dtype = features.device, features.dtype
+        total_logvar = torch.zeros((), device=device, dtype=dtype)
+        total_mse = torch.zeros((), device=device, dtype=dtype)
+        total_weight = torch.zeros((), device=device, dtype=dtype)
+        B_total = features.size(0)
+        gamma = 1e-3
+        logvar_thr = torch.tensor(self.var_threshold * (self.reg_strength ** 2) + gamma, device=device, dtype=dtype)
+        for cls in unique_labels:
+            mask = (labels == cls)
+            class_feats = features[mask]
+            M = class_feats.size(0)
+            if M <= 1:
+                continue
+            tokens = class_feats.unsqueeze(0)
+            slots = self.slot_attention(tokens).squeeze(0)
+            enhanced = self.cross_attention(class_feats, slots)
+            mean_c = enhanced.mean(dim=0)
+            mse_c = F.mse_loss(enhanced, mean_c.expand_as(enhanced))
+            var_c = enhanced.var(dim=0, unbiased=False)
+            logvar = torch.log(var_c + self.eps_var + gamma)
+            ce_sur = F.relu(logvar - torch.log(logvar_thr))
+            logvar_c = ce_sur.mean()
+            w = torch.tensor(float(M) / float(B_total), device=device, dtype=dtype)
+            total_mse += mse_c * w
+            total_logvar += logvar_c * w
+            total_weight += w
+        if total_weight > 0:
+            rob_loss = total_logvar / total_weight
+            intra_mse = total_mse / total_weight
+        else:
+            rob_loss = torch.zeros((), device=device, dtype=dtype)
+            intra_mse = torch.zeros((), device=device, dtype=dtype)
+        return rob_loss, intra_mse
 def init_weights(m): # weight initialization
     if type(m) == nn.Linear:
         torch.nn.init.xavier_uniform_(m.weight, gain=1.0)
@@ -309,9 +451,9 @@ class MIA_train: # main class for every thing
                 print("Auto extract dropout ratio fail, use regularization_strength input as dropout ratio")
             print('dropout_ratio is:',self.dropout_ratio)
         else:
-            self.dropout_defense = False
-            self.dropout_ratio = AT_regularization_strength
-        
+        self.dropout_defense = False
+        self.dropout_ratio = AT_regularization_strength
+
         if "topkprune" in self.AT_regularization_option:
             self.topkprune = True
             try: 
@@ -329,6 +471,10 @@ class MIA_train: # main class for every thing
             self.double_local_layer = False
         
         ''' Activation Defense (end)'''
+
+        # Always use attention CEM surrogate to replace GMM (to ensure apples-to-apples except surrogate)
+        self.use_attention_cem = True
+        self.attention_cem = None
 
 
         # client sampling: dividing datasets to actual number of clients, self.num_clients is fake num of clients for ease of simulation.
@@ -1043,7 +1189,26 @@ class MIA_train: # main class for every thing
 
 
         if not random_ini_centers and self.lambd>0:
-            rob_loss,intra_class_mse = self.compute_class_means(z_private, label_private, unique_labels, centroids_list,weights_list,cluster_variances_list)
+            if self.use_attention_cem:
+                # Attention-based CEM: flatten conv features to [B,D]
+                if z_private.dim() == 4:
+                    B, C, H, W = z_private.shape
+                    feats_flat = z_private.view(B, -1)
+                else:
+                    feats_flat = z_private
+                if self.attention_cem is None:
+                    self.attention_cem = SlotCrossAttentionCEM(
+                        feature_dim=feats_flat.size(1),
+                        num_slots=8,
+                        num_heads=4,
+                        num_iterations=3,
+                        eps_var=1e-4,
+                        var_threshold=self.var_threshold,
+                        reg_strength=self.regularization_strength,
+                    ).to(feats_flat.device)
+                rob_loss, intra_class_mse = self.attention_cem(feats_flat, label_private, unique_labels)
+            else:
+                rob_loss,intra_class_mse = self.compute_class_means(z_private, label_private, unique_labels, centroids_list,weights_list,cluster_variances_list)
         else:
             rob_loss,intra_class_mse=torch.tensor(0.0),torch.tensor(0.0)
         # assert 1==0, print(x_private.shape,label_private.shape,unique_values)

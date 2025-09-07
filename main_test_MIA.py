@@ -8,7 +8,7 @@ import logging
 import MIA_torch
 from datasets_torch import *
 from utils import setup_logger
-import model_training
+import model_training_paral_pruning
 import argparse
 
 import torch
@@ -92,7 +92,7 @@ for date_0 in date_list:
     #                     random_seed = args.random_seed, bottleneck_option = args.bottleneck_option,
     #                     measure_option = args.measure_option, bhtsne_option = args.bhtsne_option, attack_confidence_score = args.attack_confidence_score, 
     #                     save_activation_tensor = args.save_activation_tensor, gan_loss_type = args.gan_loss_type)
-    mi = model_training.MIA_train(args.arch, cutting_layer, batch_size, n_epochs = args.num_epochs, scheme = args.scheme,
+    mi = model_training_paral_pruning.MIA_train(args.arch, cutting_layer, batch_size, n_epochs = args.num_epochs, scheme = args.scheme,
                     num_client = num_client, dataset=args.dataset, save_dir=save_dir_name,random_seed=random_seed,
                     regularization_option=args.regularization, regularization_strength = args.regularization_strength, AT_regularization_option=args.AT_regularization, AT_regularization_strength = args.AT_regularization_strength, log_entropy=args.log_entropy,
                     gan_AE_type = args.gan_AE_type, bottleneck_option = args.bottleneck_option, gan_loss_type=args.gan_loss_type)
