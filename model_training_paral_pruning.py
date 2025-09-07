@@ -1198,6 +1198,8 @@ class MIA_train: # main class for every thing
 
     '''Main training function, the communication between client/server is implicit to keep a fast training speed'''
     def train_target_step(self, x_private, label_private, adding_noise,random_ini_centers,centroids_list,weights_list,cluster_variances_list,client_id=0):
+        # 每个 step 必须先清梯度，避免跨 step 累积导致学习无效
+        self.optimizer_zero_grad()
         self.f_tail.train()
         self.classifier.train()
         self.f.train()
