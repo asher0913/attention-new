@@ -1845,6 +1845,10 @@ class MIA_train: # main class for every thing
                     random_ini_centers = False
                 train_loss_list=[]
                 f_loss_list= []
+                # 重新初始化各客户端迭代器，避免沿用上一轮末尾位置
+                client_iterator_list = []
+                for _cid in range(self.num_client):
+                    client_iterator_list.append(iter(self.client_dataloader[_cid]))
                 model_train_stime= time.time()
                 self.pooling = False
                 if "pruning" in self.AT_regularization_option and epoch==self.pruning_ep:
