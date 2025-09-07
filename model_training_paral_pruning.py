@@ -2152,7 +2152,7 @@ class MIA_train: # main class for every thing
                         log_det_mean=log_det_mean,log_detes_mean=log_detes_mean))
                     feature_clst_etime= time.time()
                     print(f"feature_clst_one_ep_time:{feature_clst_etime-feature_infer_etime} s")
-                    if (epoch-1)%40 ==0:
+                    if self.bhtsne and (epoch-1)%40 ==0:
                         try:
                             Z_visual=Z_all[0:10000].detach().cpu()
                             label_visual=label_all[0:10000].detach().cpu()
