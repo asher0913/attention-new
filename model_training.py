@@ -1549,6 +1549,11 @@ class MIA_train: # main class for every thing
                 train_loss_list=[]
                 f_loss_list= []
                 if "epoch" in self.scheme:
+                    # 每个 epoch 重新初始化各客户端的迭代器，确保 DataLoader 重新开始且打乱生效
+                    client_iterator_list = []
+                    for _cid in range(self.num_client):
+                        client_iterator_list.append(iter(self.client_dataloader[_cid]))
+
                     model_train_stime= time.time()
                     for batch in range(self.num_batches):
 
