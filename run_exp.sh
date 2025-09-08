@@ -2,33 +2,33 @@
 # cd "$(dirname "$0")"
 # cd ../../
 GPU_id=0
-arch=vgg11_bn_sgm ##if sgm, pls change this term vgg11_bn_sgm
+arch=vgg11_bn
 batch_size=128
 random_seed=125
 cutlayer_list="4"
 num_client=1
 
-AT_regularization=SCA_new #"gan_adv_step1;dropout0.2;gan_adv_step1_pruning180 nopeek"
-AT_regularization_strength=0.3
-ssim_threshold=0.5
+AT_regularization=gan_adv_step1
+AT_regularization_strength=0.1
+ssim_threshold=0.0
 train_gan_AE_type=res_normN4C64
 gan_loss_type=SSIM
 
-dataset_list="cifar10" # "svhn facescrub mnist"
+dataset_list="cifar10"
 scheme=V2_epoch
 random_seed_list="125"
 #Extra argement (store_true): --collude_use_public, --initialize_different  --collude_not_regularize  --collude_not_regularize --num_client_regularize ${num_client_regularize}
 
-regularization='Gaussian_kl' #'Gaussian_Nonekl'
-var_threshold=0.125
+regularization='Gaussian_kl'
+var_threshold=0.1
 learning_rate=0.05
 local_lr=-1
 num_epochs=240
-regularization_strength_list="0.025"
-lambd_list="16" #
-log_entropy=1
-folder_name="saves/cifar10/${AT_regularization}_infocons_sgm_lg${log_entropy}_thre${var_threshold}" ##the folder to save the model
-bottleneck_option_list="noRELU_C8S1" #"noRELU_C8S1"
+regularization_strength_list="0.005"
+lambd_list="1"
+log_entropy=0
+folder_name="saves/cifar10/attention_cem_baseline_thre${var_threshold}"
+bottleneck_option_list="C8S1"
 pretrain="False"
 for dataset in $dataset_list; do
         for lambd in $lambd_list; do
@@ -52,8 +52,8 @@ for dataset in $dataset_list; do
                                                 learning_rate=0.05
                                                 CUDA_VISIBLE_DEVICES=${GPU_id} python main_MIA.py --arch=${arch}  --cutlayer=$cutlayer --batch_size=${batch_size} \
                                                 --filename=$filename --num_client=$num_client --num_epochs=$num_epochs \
-                                                --dataset=$dataset --scheme=$scheme --regularization=${regularization} --regularization_strength=${regularization_strength} --log_entropy=${log_entropy} --AT_regularization=${AT_regularization} --AT_regularization_strength=${AT_regularization_strength}\
-                                                --random_seed=$random_seed --learning_rate=$learning_rate --lambd=$lambd  --gan_AE_type ${train_gan_AE_type} --gan_loss_type ${gan_loss_type}\
+                                                --dataset=$dataset --scheme=$scheme --regularization=${regularization} --regularization_strength=${regularization_strength} --log_entropy=${log_entropy} --AT_regularization=${AT_regularization} --AT_regularization_strength=${AT_regularization_strength} --cem_mode attention \
+                                                --random_seed=$random_seed --learning_rate=$learning_rate --lambd=$lambd  --gan_AE_type ${train_gan_AE_type} --gan_loss_type ${gan_loss_type} \
                                                 --local_lr $local_lr --bottleneck_option ${bottleneck_option} --folder ${folder_name} --ssim_threshold ${ssim_threshold} --var_threshold ${var_threshold}
                                         fi
 ########################### model inversion attack  ###########################
@@ -69,10 +69,10 @@ for dataset in $dataset_list; do
   
                                         CUDA_VISIBLE_DEVICES=${GPU_id} python main_test_MIA.py --arch=${arch}  --cutlayer=$cutlayer --batch_size=${batch_size} \
                                                 --filename=$filename --num_client=$num_client --num_epochs=$num_epochs \
-                                                --dataset=$dataset --scheme=$scheme --regularization=${regularization} --regularization_strength=${regularization_strength} --log_entropy=${log_entropy} --AT_regularization=${AT_regularization} --AT_regularization_strength=${AT_regularization_strength}\
-                                                --random_seed=$random_seed --gan_AE_type ${train_gan_AE_type} --gan_loss_type ${gan_loss_type}\
-                                                --attack_epochs=$attack_epochs --bottleneck_option ${bottleneck_option} --folder ${folder_name} --var_threshold ${var_threshold}\
-                                                --average_time=$average_time --gan_AE_type ${test_gan_AE_type} --test_best
+                                                --dataset=$dataset --scheme=$scheme --regularization=${regularization} --regularization_strength=${regularization_strength} --log_entropy=${log_entropy} --AT_regularization=${AT_regularization} --AT_regularization_strength=${AT_regularization_strength} \
+                                                --random_seed=$random_seed --gan_AE_type ${test_gan_AE_type} --gan_loss_type ${gan_loss_type} --cem_mode attention \
+                                                --attack_epochs=$attack_epochs --bottleneck_option ${bottleneck_option} --folder ${folder_name} --var_threshold ${var_threshold} \
+                                                --average_time=$average_time --test_best
                                                                                 
                                 done
                         done

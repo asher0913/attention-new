@@ -30,6 +30,8 @@ parser.add_argument('--dataset', default="cifar10", type=str, help='number of cl
 parser.add_argument('--random_seed', default=125, type=int, help='random_seed for the testing dataset')
 parser.add_argument('--scheme', default="V2_epoch", type=str, help='the name of the scheme, either V3 or others')
 parser.add_argument('--bottleneck_option', default="None", type=str, help='set bottleneck option')
+parser.add_argument('--cem_mode', default="attention", type=str, help='CEM surrogate: attention (default)')
+parser.add_argument('--cem_strict_replace', action='store_true', default=False, help='If True, keep pipeline identical to CEM-main and only replace GMM with attention for CEM')
 
 # test setting
 parser.add_argument('--regularization', default="None", type=str, help='apply regularization in multi-client training.')
@@ -95,7 +97,8 @@ for date_0 in date_list:
     mi = model_training_paral_pruning.MIA_train(args.arch, cutting_layer, batch_size, n_epochs = args.num_epochs, scheme = args.scheme,
                     num_client = num_client, dataset=args.dataset, save_dir=save_dir_name,random_seed=random_seed,
                     regularization_option=args.regularization, regularization_strength = args.regularization_strength, AT_regularization_option=args.AT_regularization, AT_regularization_strength = args.AT_regularization_strength, log_entropy=args.log_entropy,
-                    gan_AE_type = args.gan_AE_type, bottleneck_option = args.bottleneck_option, gan_loss_type=args.gan_loss_type)
+                    gan_AE_type = args.gan_AE_type, bottleneck_option = args.bottleneck_option, gan_loss_type=args.gan_loss_type,
+                    cem_mode=args.cem_mode, cem_strict_replace=args.cem_strict_replace)
     if args.new_log_folder:
         new_folder_dir = mi.save_dir + '/{}_{}/'.format(args.regularization, args.regularization_strength)
         new_folder_dir = os.path.abspath(new_folder_dir)

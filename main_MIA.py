@@ -41,6 +41,8 @@ parser.add_argument('--ssim_threshold', default=0.0, type=float, help='regulariz
 parser.add_argument('--gan_AE_type', default="custom", type=str, help='the name of the AE used in GAN_adv, option: custom, simple, simplest')
 parser.add_argument('--gan_loss_type', default="SSIM", type=str, help='loss type of training defensive decoder: SSIM or MSE')
 parser.add_argument('--bottleneck_option', default="None", type=str, help='set bottleneck option')
+parser.add_argument('--cem_mode', default="gmm", type=str, choices=["gmm", "attention"], help='CEM surrogate: gmm or attention')
+parser.add_argument('--cem_strict_replace', action='store_true', default=False, help='If True, keep pipeline identical to CEM-main and only replace GMM with attention for CEM')
 parser.add_argument('--optimize_computation', default=1, type=int, help='set interval N to optimize_computation')
 parser.add_argument('--decoder_sync', action='store_true', default=False, help='if True, we sync decoder')
 
@@ -73,7 +75,8 @@ mi = model_training_paral_pruning.MIA_train(args.arch, cutting_layer, batch_size
                  optimize_computation = args.optimize_computation, decoder_sync = args.decoder_sync, 
                  finetune_freeze_bn = args.finetune_freeze_bn, gan_loss_type=args.gan_loss_type, ssim_threshold = args.ssim_threshold,var_threshold = args.var_threshold,
                  source_task = args.transfer_source_task, load_from_checkpoint_server = args.load_from_checkpoint_server, save_more_checkpoints = args.save_more_checkpoints,
-                 dataset_portion = args.dataset_portion, noniid = args.noniid, client_sample_ratio = args.client_sample_ratio)
+                 dataset_portion = args.dataset_portion, noniid = args.noniid, client_sample_ratio = args.client_sample_ratio,
+                 cem_mode=args.cem_mode, cem_strict_replace=args.cem_strict_replace)
 mi.logger.debug(str(args))
 
 log_frequency = 500

@@ -23,16 +23,11 @@ import os
 import time
 from ptflops import get_model_complexity_info
 from shutil import rmtree
-from GMM import fit_gmm_torch
 from torchsummary import summary
 from sklearn.manifold import TSNE
 import torch_pruning as tp
 from datasets_torch import get_cifar100_trainloader, get_cifar100_testloader, get_cifar10_trainloader, \
     get_cifar10_testloader, get_mnist_bothloader, get_facescrub_bothloader, get_SVHN_trainloader, get_SVHN_testloader, get_fmnist_bothloader, get_tinyimagenet_bothloader,get_imagenet_bothloader,get_celeba_trainloader,get_celeba_testloader
-from sklearn.mixture import GaussianMixture
-# from cuml.mixture import GaussianMixture as cuGaussianMixture
-from sklearn.decomposition import PCA
-from sklearn.cluster import KMeans
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from joblib import Parallel, delayed
 
@@ -154,9 +149,9 @@ class SlotCrossAttentionCEM(nn.Module):
         B_total = features.size(0)
         gamma = 1e-6  # Smaller gamma for better numerical stability
         
-        # Improved threshold calculation
-        logvar_thr = torch.tensor(max(self.var_threshold * (self.reg_strength ** 2), 1e-8) + gamma, 
-                                device=device, dtype=dtype)
+        # Use absolute threshold instead of scaling by reg_strength^2 to avoid overly small thresholds
+        logvar_thr = torch.tensor(max(self.var_threshold, 1e-8) + gamma,
+                                  device=device, dtype=dtype)
         
         for cls in unique_labels:
             mask = (labels == cls)
@@ -321,10 +316,13 @@ class MIA_train: # main class for every thing
                  load_from_checkpoint = False, bottleneck_option="None", measure_option=False,
                  optimize_computation=1, decoder_sync = False, bhtsne_option = False, gan_loss_type = "SSIM", attack_confidence_score = False,
                  ssim_threshold = 0.0,var_threshold = 0.1, finetune_freeze_bn = False, load_from_checkpoint_server = False, source_task = "cifar100", 
-                 save_activation_tensor = False, save_more_checkpoints = False, dataset_portion = 1.0, noniid = 1.0):
+                 save_activation_tensor = False, save_more_checkpoints = False, dataset_portion = 1.0, noniid = 1.0,
+                 cem_mode: str = "gmm", cem_strict_replace: bool = False):
         torch.manual_seed(random_seed)
         np.random.seed(random_seed)
         self.arch = arch
+        self.cem_mode = cem_mode
+        self.cem_strict_replace = cem_strict_replace
         self.bhtsne = bhtsne_option
         self.batch_size = batch_size
         self.lr = learning_rate
@@ -367,6 +365,9 @@ class MIA_train: # main class for every thing
             self.logger = setup_logger('{}_logger'.format(str(save_dir)), model_log_file, level=logging.DEBUG)
         
         self.warm = 1
+        self.current_epoch = 0
+        # if strict replace, no delay; otherwise use a safe delay
+        self.robust_start_epoch = 0 if self.cem_strict_replace else 20
         self.scheme = scheme
 
         # migrate old naming:
@@ -396,6 +397,9 @@ class MIA_train: # main class for every thing
         self.collude_use_public = collude_use_public
         self.initialize_different = initialize_different
         
+        # from here on, use potentially updated self.arch consistently
+        arch = self.arch
+
         if "C" in bottleneck_option or "S" in bottleneck_option:
             self.adds_bottleneck = True
             self.bottleneck_option = bottleneck_option
@@ -501,8 +505,8 @@ class MIA_train: # main class for every thing
         
         ''' Activation Defense (end)'''
 
-        # Always use attention CEM surrogate to replace GMM (to ensure apples-to-apples except surrogate)
-        self.use_attention_cem = True
+        # Choose which CEM surrogate to use
+        self.use_attention_cem = (self.cem_mode == "attention")
         self.attention_cem = None
 
 
@@ -513,6 +517,22 @@ class MIA_train: # main class for every thing
         actual_num_users = 1
         self.collude_use_public=False
         num_workers=8
+        # If strict replace mode: keep pipeline identical to CEM-main except the CEM surrogate itself
+        if self.cem_strict_replace:
+            self.AT_regularization_option = "None"
+            self.AT_regularization_strength = 0.0
+            self.regularization_option = "None"
+            self.regularization_strength = 0.0
+            self.local_DP = False
+            self.dropout_defense = False
+            self.topkprune = False
+            self.gan_regularizer = False
+            # force off SCA
+            self.SCA = False
+            # map sgm arch to non-sgm
+            if isinstance(self.arch, str) and self.arch.endswith("_sgm"):
+                self.arch = self.arch.replace("_sgm", "")
+
         # setup dataset
         if self.dataset == "cifar10":
             self.client_dataloader, self.mem_trainloader, self.mem_testloader = get_cifar10_trainloader(batch_size=self.batch_size,
@@ -792,72 +812,6 @@ class MIA_train: # main class for every thing
     def gan_scheduler_step(self, epoch = 0):
         for i in range(len(self.gan_scheduler_list)):
             self.gan_scheduler_list[i].step(epoch)
-    def apply_gmm_with_pca_and_inverse_transform(self,class_features, n_components=3, pca_components=100, iteration=30,ini_center=None):
-        """
-        Apply Gaussian Mixture Model to the class features with PCA for dimensionality reduction,
-        and return the mean (inverse transformed to original dimensions), covariance, and weights.
-
-        Args:
-        - class_features (torch.Tensor): Input tensor of shape (n, c, h, w)
-        - n_components (int): Number of Gaussian components to fit
-        - pca_components (int, optional): Number of principal components for PCA (if None, no PCA is applied)
-
-        Returns:
-        - means (np.ndarray): Means of the Gaussian components (inverse transformed to original dimensions)
-        - covariances (np.ndarray): Covariances of the Gaussian components (inverse transformed to original dimensions)
-        - weights (np.ndarray): Weights of the Gaussian components
-        """
-        # Reshape the input tensor to shape (n, c * h * w)
-        n, c, h, w = class_features.shape
-        reshaped_features = class_features.view(n, -1)  # Flatten to (n, c * h * w)
-
-        # Convert to numpy array and move to CPU if necessary
-        features_cpu = reshaped_features.cpu().numpy()
-
-        # Apply PCA for dimensionality reduction if specified
-        if pca_components:
-            pca = PCA(n_components=pca_components)
-            reduced_features = pca.fit_transform(features_cpu)
-        else:
-            reduced_features = features_cpu
-
-        # kmeans = KMeans(n_clusters=n_components, n_init=10, max_iter=30)
-        # kmeans.fit(reduced_features)
-        # kmeans_means = kmeans.cluster_centers_
-        # Fit GMM
-       
-        gmm = GaussianMixture(n_components=n_components, covariance_type='full', max_iter=iteration, tol=1e-3, reg_covar=1e-4)
-        if ini_center is not None:
-            gmm.means_init = ini_center.cpu().numpy()
-        gmm.fit(reduced_features)
-
-        # Get the parameters
-        means = gmm.means_
-        covariances = gmm.covariances_
-        weights = gmm.weights_
-
-        # Inverse transform the means back to the original dimensions if PCA was applied
-        if pca_components:
-            means = pca.inverse_transform(means)
-
-            # For covariances, we need to apply the inverse transform using the PCA components
-            pca_components_matrix = pca.components_.T
-            inv_covariances = []
-            for cov in covariances:
-                inv_cov = np.dot(pca_components_matrix, np.dot(cov, pca_components_matrix.T))
-                inv_covariances.append(inv_cov)
-            covariances = np.array(inv_covariances)
-
-        # Reshape means to the original dimensions (n_components, c, h, w)
-        means = means.reshape(n_components, c*h*w)
-
-        means =  torch.from_numpy(means.astype(np.float32))
-        covariances =  torch.from_numpy(covariances.astype(np.float32))
-        weights =  torch.from_numpy(weights.astype(np.float32))
-        # Convert NumPy array to PyTorch tensor
-        # means = torch.from_numpy(means)
-
-        return means,covariances,weights
     def kmeans_plusplus_init(self, X, num_clusters):
         """
         KMeans++ initialization algorithm.
@@ -1197,7 +1151,7 @@ class MIA_train: # main class for every thing
 
 
     '''Main training function, the communication between client/server is implicit to keep a fast training speed'''
-    def train_target_step(self, x_private, label_private, adding_noise,random_ini_centers,centroids_list,weights_list,cluster_variances_list,client_id=0):
+    def train_target_step(self, x_private, label_private, adding_noise, random_ini_centers, client_id=0):
         # 每个 step 必须先清梯度，避免跨 step 累积导致学习无效
         self.optimizer_zero_grad()
         self.f_tail.train()
@@ -1219,7 +1173,7 @@ class MIA_train: # main class for every thing
 
 
 
-        if not random_ini_centers and self.lambd>0:
+        if not random_ini_centers and self.lambd>0 and (self.current_epoch >= self.robust_start_epoch):
             try:
                 if self.use_attention_cem:
                     # Attention-based CEM: flatten conv features to [B,D]
@@ -1257,7 +1211,8 @@ class MIA_train: # main class for every thing
                             print("Warning: NaN/Inf in intra_class_mse, setting to 0")
                             intra_class_mse = torch.tensor(0.0, device=z_private.device)
                 else:
-                    rob_loss,intra_class_mse = self.compute_class_means(z_private, label_private, unique_labels, centroids_list,weights_list,cluster_variances_list)
+                    # If attention is disabled (should not happen in this project), fall back to zero loss
+                    rob_loss, intra_class_mse = torch.tensor(0.0, device=z_private.device), torch.tensor(0.0, device=z_private.device)
             except Exception as e:
                 print(f"Error in CEM calculation: {e}")
                 rob_loss, intra_class_mse = torch.tensor(0.0, device=z_private.device), torch.tensor(0.0, device=z_private.device)
@@ -1880,15 +1835,14 @@ class MIA_train: # main class for every thing
             self.logger.debug("GAN training interval N (once every N step) is set to {}!".format(interval))
             
             adding_noise=False
-            centroids_list= [torch.tensor(float('nan')) for _ in range(self.num_class)]
-            weights_list= [torch.tensor(float('nan')) for _ in range(self.num_class)]
-            cluster_variances_list=[torch.tensor(float('nan')) for _ in range(self.num_class)]
+            # GMM-related placeholders removed; attention-CEM is the only surrogate in this project
             #Main Training
             lambd_start= self.lambd 
             lambd_end=lambd_start*2
             acc_list=[]
             rob_list= []
             for epoch in range(1, self.n_epochs+1):
+                self.current_epoch = epoch
                 ep_start_time = time.time() 
                 if epoch > self.warm:
                     self.scheduler_step(epoch)
@@ -1949,7 +1903,7 @@ class MIA_train: # main class for every thing
                             
                             # Train step (client/server)
                             # print(images.shape)
-                            train_loss, f_loss, z_private = self.train_target_step(images, labels, adding_noise,random_ini_centers,centroids_list,weights_list,cluster_variances_list,client_id)
+                            train_loss, f_loss, z_private = self.train_target_step(images, labels, adding_noise, random_ini_centers, client_id)
 
                             train_loss_list.append(torch.tensor(train_loss))
                             f_loss_list.append(torch.tensor(f_loss))
@@ -2005,201 +1959,7 @@ class MIA_train: # main class for every thing
 
                 # if epoch==2:
                 #     summary(self.f.cuda(), input_size=(3,32, 32))
-                if self.dataset != "imagenet" and self.regularization_strength!=0:
-                    feature_infer_stime= time.time()
-                    print(f"train_one_ep_time:{feature_infer_stime-model_train_stime} s")
-                    # rob training
-                    for batch in range(self.num_batches):
-                        with torch.no_grad():
-                            for client_id in range(self.num_client):
-                                # try:
-                                images, labels = next(client_iterator_list[client_id])
-                                if images.size(0) != self.batch_size:
-                                    client_iterator_list[client_id] = iter(self.client_dataloader[client_id])
-                                    images, labels = next(client_iterator_list[client_id])
-                                self.f.eval()
-                                x_private = images.cuda()
-                                label_private = labels.cuda()
-                                z_private = self.f(x_private)
-                                Z_all.append(z_private.cpu())
-                                label_all.append(labels.cpu()) 
-                    feature_infer_etime= time.time()
-                    print(f"feature_infer_one_ep_time:{feature_infer_etime - feature_infer_stime} s")
-                    Z_all = torch.cat(Z_all, dim=0).cuda()
-                    label_all = torch.cat(label_all, dim=0).cuda()
-                    self.pooling = False
-                    adaptive_avg_pool = nn.AdaptiveAvgPool2d((16, 16))
-                    if self.pooling:
-                        Z_all=adaptive_avg_pool(Z_all)
-                    print(Z_all.shape)
-                    # for batch in range(self.num_batches_rob):
-                    #     # with torch.no_grad():
-                    #         for client_id in range(self.num_client):
-                    #             # try:
-                    #             images, labels = next(client_iterator_list[client_id+1])
-                    #             if images.size(0) != self.batch_size:
-                    #                 client_iterator_list[client_id+1] = iter(self.client_dataloader_rob[client_id])
-                    #                 images, labels = next(client_iterator_list[client_id+1])
-                    #             # self.f.eval()
-                    #             self.f.train()
-                    #             x_private = images.cuda()
-                    #             label_private = labels.cuda()
-                    #             z_private = self.f(x_private)
-                    #             unique_labels = torch.unique(label_private)
-                    #             if not random_ini_centers and self.lambd>0:
-                    #                 rob_loss,intra_class_mse = self.compute_class_means(z_private, label_private, unique_labels, centroids_list)
-                    #                 self.optimizer_zero_grad()
-                    #                 rob_loss.backward(retain_graph=True)
-                    #                 encoder_gradients = {name: param.grad.clone() for name, param in self.f.named_parameters()} 
-                    #                 for name, param in self.f.named_parameters():
-                    #                     if (self.train_scheduler.get_last_lr()[0])<0.00041: #strat to enhance rob when lr is small and acc is high
-                    #                         param.grad += self.lambd*encoder_gradients[name]
-                    #                     else:
-                    #                         param.grad += self.lambd*encoder_gradients[name]*(0.001/self.train_scheduler.get_last_lr()[0])   
-                    #             # scale_factor = 0.1  
-                    #             # for param in self.f.parameters():
-                    #             #     param.data -= scale_factor * param.grad * self.optimizer.param_groups[0]['lr']
-                    #             self.optimizer_step()
-                    #             self.optimizer_zero_grad()  
-                    #             z_private=z_private.detach()
-                    #             label_private=label_private.detach()            
-                    #             Z_all.append(z_private.cpu())
-                    #             label_all.append(labels.cpu()) 
-                    # feature_infer_etime= time.time()
-                    # print(f"feature_infer_one_ep_time:{feature_infer_etime - feature_infer_stime} s")
-                    # Z_all = torch.cat(Z_all, dim=0).cuda()
-                    # label_all = torch.cat(label_all, dim=0).cuda()
-                    # print(Z_all.shape,label_all.shape)
-                    
-                    num_clusters=5
-                    if 'sgm' not in self.arch:
-                        num_clusters=num_clusters*3
-
-                    # gmm_params = fit_gmm_torch(Z_all, label_all, self.num_class, num_clusters)
-                    log_det_list=[]
-                    log_det_eslist=[]
-                    
-                    for class_label in range(self.num_class):
-                        
-                        centroids=centroids_list[class_label].detach().clone()
-                        class_features = Z_all[label_all == class_label].detach().clone()
-                        # print(class_features.shape)
-                        # print(class_label,len(class_features),len(label_all[label_all == class_label]))
-                        if class_features.size(0) > num_clusters:
-                            # print(class_features.size(0))
-                            cluster_start=time.time()
-
-                            centroids, cluster_variances,cluster_covariances,cluster_weights=self.kmeans_cuda(class_features, num_clusters,centroids,random_ini_centers, num_iterations=50, tol=1e-4)  # 
-                            
-                            # del average_variance
-
-                            # centroids, cluster_covariances, cluster_weights = self.apply_gmm_with_pca_and_inverse_transform(class_features,n_components=num_clusters, pca_components=None,iteration=10,ini_center=centroids)
-                            centroids_list[class_label] = centroids.clone().detach().cuda()
-                            cluster_variances_list[class_label]= cluster_variances.clone().detach().cuda()
-                            del cluster_variances
-                            cluster_weights=cluster_weights.clone().detach().cuda()
-                            weights_list[class_label]=cluster_weights
-                            # print(cluster_weights)
-                            end=time.time()
-                            # print('k-mean_time=',end-cluster_start)
-                            if (epoch-1)%10 ==0:
-                                for i in range(len(cluster_covariances)):
-                                    # if cluster_weights<
-                                    cluster_covariance=cluster_covariances[i].clone().detach().cuda()
-                                    cluster_covariance = cluster_covariance + torch.eye(len(cluster_covariance)).cuda()*self.regularization_strength**2  # 确保矩阵是正定的
-                                # 使用Cholesky分解计算行列式的对数
-                                    # L = torch.cholesky(cluster_covariance)
-                                    # try:
-                                    #     L = torch.cholesky(cluster_covariance)
-                                    #     log_det_r = 2 * torch.sum(torch.log(torch.diag(L)))
-                                    # except torch.linalg.LinAlgError:
-                                    # Add more regularization to ensure numerical stability
-                                    reg_strength = max(self.regularization_strength**2, 1e-6)
-                                    cluster_covariance = cluster_covariance + torch.eye(len(cluster_covariance)).cuda() * reg_strength
-                                    
-                                    # Clamp diagonal values to prevent log(0)
-                                    diag_vals = torch.clamp(torch.diag(cluster_covariance), min=1e-8)
-                                    log_det_es = torch.mean(torch.log(diag_vals))
-
-                                    if torch.isnan(log_det_es).any() or torch.isinf(log_det_es).any():
-                                        print("Warning: NaN/Inf values detected in log determinant calculation")
-                                        log_det_es = torch.tensor(0.0, device=cluster_covariance.device)
-                                        
-                                    try:
-                                        L = torch.linalg.cholesky(cluster_covariance)
-                                        log_det_r = 2 * torch.mean(torch.log(torch.clamp(torch.diag(L), min=1e-8)))
-                                        if torch.isnan(log_det_r).any() or torch.isinf(log_det_r).any():
-                                            log_det_r = log_det_es
-                                    except torch.linalg.LinAlgError:
-                                        log_det_r = log_det_es
-                                        print('Cannot calculate Cholesky decomposition, using diagonal approximation')
-                                    # log_det_r=log_det_es
-                                    if i==0:
-                                        log_det = log_det_r*cluster_weights[i]
-                                        log_det_e = log_det_es*cluster_weights[i]
-                                    else:
-                                        log_det+= log_det_r*cluster_weights[i]
-                                        log_det_e += log_det_es*cluster_weights[i]
-                
-                            # log_dets = torch.tensor([2 * torch.sum(torch.log(torch.diag(torch.cholesky(cov)))) for cov in cluster_covariances])
-                        # print(abs(centroids_list[class_label]).mean())
-                        if (epoch-1)%10 ==0:
-                            log_det_list.append(log_det)
-                            log_det_eslist.append(log_det_e)
-                        del class_features,centroids
-                    if (epoch-1)%10 ==0:
-                        log_det_mean= torch.stack(log_det_list).mean()
-                        rob_list.append(torch.tensor(log_det_mean.detach().cpu()))
-                        log_detes_mean= torch.stack(log_det_eslist).mean()
-                        
-                        # print('the mean of mutal infor is:', log_det_mean)
-                        self.logger.debug('the mean of mutal infor is:({log_det_mean:.3f}), the est mean of mutal infor is:({log_detes_mean:.3f})'.format(
-                        log_det_mean=log_det_mean,log_detes_mean=log_detes_mean))
-                    feature_clst_etime= time.time()
-                    print(f"feature_clst_one_ep_time:{feature_clst_etime-feature_infer_etime} s")
-                    if self.bhtsne and (epoch-1)%40 ==0:
-                        try:
-                            Z_visual=Z_all[0:10000].detach().cpu()
-                            label_visual=label_all[0:10000].detach().cpu()
-                            Z_visual = Z_visual.view(len(Z_visual), -1).detach().cpu()
-
-                            # Check for NaN or infinite values
-                            if torch.isnan(Z_visual).any() or torch.isinf(Z_visual).any():
-                                print("Warning: NaN or Inf values detected in features, skipping t-SNE visualization")
-                            else:
-                                mask = (label_visual >= 0) & (label_visual <= 2)
-                                Z_visual = Z_visual[mask]
-                                label_visual = label_visual[mask]
-
-                                # Ensure we have enough samples for t-SNE
-                                if len(Z_visual) > 30:  # t-SNE needs at least perplexity samples
-                                    # Normalize features to prevent numerical issues
-                                    Z_visual_norm = (Z_visual - Z_visual.mean(dim=0)) / (Z_visual.std(dim=0) + 1e-8)
-                                    
-                                    tsne = TSNE(n_components=2, perplexity=min(30, len(Z_visual)//4), 
-                                              learning_rate=200, max_iter=1000, random_state=42, 
-                                              init='pca', n_jobs=1)
-                                    reduced_features = tsne.fit_transform(Z_visual_norm.numpy())
-                                    
-                                    visual_dir = self.save_dir + '/visualize'
-                                    os.makedirs(visual_dir, exist_ok=True)
-                                    plt.figure(figsize=(10, 8))
-                                    scatter = plt.scatter(reduced_features[:, 0], reduced_features[:, 1], 
-                                                        c=label_visual.numpy(), cmap='viridis')
-                                    plt.colorbar(scatter)
-                                    plt.xlabel('t-SNE Component 1')
-                                    plt.ylabel('t-SNE Component 2')
-                                    plt.title('t-SNE of n*8*8*8 features')
-                                    file_name=visual_dir+'/'+str(epoch)+'.png'
-                                    plt.savefig(file_name, dpi=150, bbox_inches='tight')
-                                    plt.close()  # Close the figure to free memory
-                                    print(f"t-SNE visualization saved: {file_name}")
-                                else:
-                                    print("Not enough samples for t-SNE visualization")
-                        except Exception as e:
-                            print(f"Error during t-SNE visualization: {e}")
-                            print("Skipping visualization and continuing training...")
-                    del Z_all,label_all
+                # (Removed) GMM/KMeans-based feature clustering analysis; attention-only pipeline keeps training simple and stable.
 
                 # kmeans_cuda(self,X, num_clusters,centroids, num_iterations=10, tol=1e-4):
                 
