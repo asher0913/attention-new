@@ -1244,6 +1244,9 @@ class MIA_train: # main class for every thing
                                 var_threshold=self.var_threshold,
                                 reg_strength=self.regularization_strength,
                             ).to(feats_flat.device)
+                            # Freeze attention surrogate params so we only backprop to encoder features
+                            for p in self.attention_cem.parameters():
+                                p.requires_grad_(False)
                         rob_loss, intra_class_mse = self.attention_cem(feats_flat, label_private, unique_labels)
                         
                         # Additional safety check
@@ -2236,6 +2239,7 @@ class MIA_train: # main class for every thing
                 plt.grid(True)
                 acc_img=logimg_path+'/acc.png'
                 plt.savefig(acc_img)
+                plt.close()
 
                 # 绘制并保存 Robustness 的折线图
                 epochs = list(range(1, len(rob_list) + 1))
@@ -2248,6 +2252,7 @@ class MIA_train: # main class for every thing
                 plt.grid(True)
                 rob_img=logimg_path+'/rob.png'
                 plt.savefig(rob_img)
+                plt.close()
 
         if not self.call_resume:
 
