@@ -288,7 +288,10 @@ class SlotCrossAttentionCEM(nn.Module):
         # Early shutoff: if early steps or gates indicate broad activation, suppress CEM this call
         early_shut = (self.call_count <= self.early_shut_steps) or (avg_hard > float(self.early_hard_thresh)) or (avg_gate > float(self.early_gate_thresh))
         if early_shut:
-            rob_loss = torch.zeros((), device=device, dtype=dtype)
+            # Return a zero rob_loss that is still connected to the graph so downstream
+            # code that expects rob_loss.requires_grad can run without UnboundLocalError.
+            # This keeps encoder_gradients path alive but with zero gradients.
+            rob_loss = (features.sum() * 0.0).sum()
             # Optional: also zero intra_mse contribution to avoid misleading logs (keep as-is)
             if self.debug_counter < 5 or (self.call_count % self.print_every == 0):
                 print(f"[CEM-GATE][SHUTOFF step={self.call_count}] classes={dbg_cls_count} gate_d={avg_gate:.3f} hard_gate={avg_hard:.3f} base={avg_base:.3f}")
