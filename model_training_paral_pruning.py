@@ -141,6 +141,19 @@ class SlotCrossAttentionCEM(nn.Module):
         self.var_threshold = var_threshold
         self.reg_strength = reg_strength
 
+        # Gated Attention (per-dimension): sigmoid(MLP(LN(logvar))) in the spirit of Gated Attention MIL (Ilse et al., ICML'18)
+        gate_hidden = max(32, feature_dim // 8)
+        self.var_ln = nn.LayerNorm(feature_dim)
+        self.gate_mlp = nn.Sequential(
+            nn.Linear(feature_dim, gate_hidden),
+            nn.GELU(),
+            nn.Linear(gate_hidden, feature_dim),
+            nn.Sigmoid(),
+        )
+        # Class-level gate: scales CEM per class based on relative sample count (learnable)
+        self.class_gate_a = nn.Parameter(torch.tensor(10.0))   # sharpness
+        self.class_gate_b = nn.Parameter(torch.tensor(0.05))   # midpoint for M/B
+
     def forward(self, features, labels, unique_labels):
         device, dtype = features.device, features.dtype
         total_logvar = torch.zeros((), device=device, dtype=dtype)
@@ -179,9 +192,17 @@ class SlotCrossAttentionCEM(nn.Module):
             logvar = torch.log(var_c + gamma)
             log_threshold = torch.log(logvar_thr)
             
-            # More stable conditional entropy approximation
-            ce_sur = F.relu(logvar - log_threshold)
+            # Base CE surrogate per dimension
+            base_ce = F.relu(logvar - log_threshold)
+            # Per-dimension gate in [0,1]
+            gate_d = self.gate_mlp(self.var_ln(logvar))
+            ce_sur = gate_d * base_ce
             logvar_c = ce_sur.mean()
+
+            # Class-level gate based on relative sample count (M / B_total)
+            mb = torch.tensor(float(M) / float(B_total), device=device, dtype=dtype)
+            gate_c = torch.sigmoid(self.class_gate_a * (mb - self.class_gate_b))
+            logvar_c = logvar_c * gate_c
             
             # Check for numerical issues
             if torch.isnan(logvar_c) or torch.isinf(logvar_c):
