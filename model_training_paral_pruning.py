@@ -154,61 +154,109 @@ class SlotCrossAttentionCEM(nn.Module):
         self.class_gate_a = nn.Parameter(torch.tensor(10.0))   # sharpness
         self.class_gate_b = nn.Parameter(torch.tensor(0.05))   # midpoint for M/B
 
+        # Slot assignment temperature and slot mass sharpening (Mixture-of-Slots)
+        self.assign_temp = nn.Parameter(torch.tensor(10.0))  # β for soft assignment
+        self.slot_power = nn.Parameter(torch.tensor(2.0))    # sharpen slot mass weights
+
+        # Softplus margin parameters (stabilize surrogate around threshold)
+        self.softplus_beta = nn.Parameter(torch.tensor(1.0))
+        self.margin_m = nn.Parameter(torch.tensor(0.1))
+
+        # SNR hard-ish gate threshold and sharpness (per-dim)
+        self.snr_thresh = nn.Parameter(torch.tensor(0.3))
+        self.snr_sharp = nn.Parameter(torch.tensor(10.0))
+        # Debug counter for lightweight logging
+        self.debug_counter = 0
+
     def forward(self, features, labels, unique_labels):
         device, dtype = features.device, features.dtype
         total_logvar = torch.zeros((), device=device, dtype=dtype)
         total_mse = torch.zeros((), device=device, dtype=dtype)
         total_weight = torch.zeros((), device=device, dtype=dtype)
         B_total = features.size(0)
+        eps = 1e-8
         gamma = 1e-6  # Smaller gamma for better numerical stability
-        
+
         # Threshold uses var_threshold scaled by reg_strength^2 (original design)
         logvar_thr = torch.tensor(max(self.var_threshold * (self.reg_strength ** 2), 1e-8) + gamma,
                                   device=device, dtype=dtype)
-        
+
+        # Debug accumulators
+        dbg_gate_sum = 0.0
+        dbg_hard_sum = 0.0
+        dbg_cls_count = 0
+
         for cls in unique_labels:
             mask = (labels == cls)
             class_feats = features[mask]
             M = class_feats.size(0)
-            if M <= 2:  # Need at least 2 samples for meaningful variance
+            if M <= 2:
                 continue
-                
+
             # Normalize features to improve numerical stability
-            class_feats_norm = F.layer_norm(class_feats, class_feats.shape[1:])
-            
-            tokens = class_feats_norm.unsqueeze(0)
-            slots = self.slot_attention(tokens).squeeze(0)
-            enhanced = self.cross_attention(class_feats_norm, slots)
-            
-            # Compute class statistics
+            class_feats_norm = F.layer_norm(class_feats, class_feats.shape[1:])  # [M,D]
+
+            # Slots and enhanced features
+            tokens = class_feats_norm.unsqueeze(0)  # [1,M,D]
+            slots = self.slot_attention(tokens).squeeze(0)  # [S,D]
+            enhanced = self.cross_attention(class_feats_norm, slots)  # [M,D]
+
+            # Basic class statistics for logging (unchanged)
             mean_c = enhanced.mean(dim=0)
             mse_c = F.mse_loss(enhanced, mean_c.expand_as(enhanced))
-            
-            # Improved variance calculation with numerical stability
-            var_c = enhanced.var(dim=0, unbiased=True)  # Use unbiased estimator
-            var_c = torch.clamp(var_c, min=self.eps_var)  # Ensure positive variance
-            
-            # Conditional entropy surrogate calculation
-            logvar = torch.log(var_c + gamma)
-            log_threshold = torch.log(logvar_thr)
-            
-            # Base CE surrogate per dimension
-            base_ce = F.relu(logvar - log_threshold)
-            # Per-dimension gate in [0,1]
-            gate_d = self.gate_mlp(self.var_ln(logvar))
-            ce_sur = gate_d * base_ce
-            logvar_c = ce_sur.mean()
 
-            # Class-level gate based on relative sample count (M / B_total)
+            # -------- Mixture-of-Slots variance (slot-internal) --------
+            # Soft assignment r(m,s)
+            sims = F.normalize(class_feats_norm, dim=-1) @ F.normalize(slots, dim=-1).t()  # [M,S]
+            r = F.softmax(self.assign_temp * sims, dim=1)  # [M,S]
+            slot_mass = r.sum(dim=0) + eps  # [S]
+
+            # Slot means mu_s: [S,D]
+            mu_s = (r.t() @ enhanced) / slot_mass.unsqueeze(1)
+
+            # Slot variances var_s: [S,D]
+            diff = enhanced.unsqueeze(1) - mu_s.unsqueeze(0)  # [M,S,D]
+            var_num = (r.unsqueeze(2) * (diff ** 2)).sum(dim=0)  # [S,D]
+            var_s = var_num / slot_mass.unsqueeze(1)
+            var_s = torch.clamp(var_s, min=self.eps_var)
+            logvar_s = torch.log(var_s + gamma)  # [S,D]
+
+            # -------- Per-dimension gates (soft + SNR-based hard-ish) --------
+            # Soft per-dimension gates per slot
+            gate_d = self.gate_mlp(self.var_ln(logvar_s))  # [S,D]
+            # SNR per slot-dim and smooth hard gate
+            snr = var_s / (mu_s ** 2 + eps)  # [S,D]
+            hard_gate = torch.sigmoid(self.snr_sharp * (snr - self.snr_thresh))  # ~{0,1}
+
+            # Softplus margin instead of ReLU
+            log_threshold = torch.log(logvar_thr)
+            soft_arg = self.softplus_beta * (logvar_s - log_threshold - self.margin_m)
+            base_ce = F.softplus(soft_arg) / (self.softplus_beta + eps)  # [S,D]
+
+            gated_ce = hard_gate * gate_d * base_ce  # [S,D]
+
+            # ---- debug accumulate per-class gate stats ----
+            dbg_gate_sum += float(gate_d.mean().detach().cpu())
+            dbg_hard_sum += float(hard_gate.mean().detach().cpu())
+            dbg_cls_count += 1
+
+            # -------- Slot mass gating (sharpened) --------
+            weights = (slot_mass / float(M))  # [S]
+            weights = weights ** self.slot_power
+            weights = weights / (weights.sum() + eps)  # normalize
+            # Aggregate across slots, then across dims
+            ce_dim = (weights.unsqueeze(1) * gated_ce).sum(dim=0)  # [D]
+            logvar_c = ce_dim.mean()  # scalar
+
+            # -------- Class-level gate based on relative sample count --------
             mb = torch.tensor(float(M) / float(B_total), device=device, dtype=dtype)
             gate_c = torch.sigmoid(self.class_gate_a * (mb - self.class_gate_b))
             logvar_c = logvar_c * gate_c
-            
-            # Check for numerical issues
+
             if torch.isnan(logvar_c) or torch.isinf(logvar_c):
                 print(f"Warning: NaN/Inf detected in class {cls.item()}, skipping...")
                 continue
-            
+
             w = torch.tensor(float(M) / float(B_total), device=device, dtype=dtype)
             total_mse += mse_c * w
             total_logvar += logvar_c * w
@@ -221,6 +269,17 @@ class SlotCrossAttentionCEM(nn.Module):
             rob_loss = torch.zeros((), device=device, dtype=dtype)
             intra_mse = torch.zeros((), device=device, dtype=dtype)
             
+        # Lightweight debug (first 5 calls)
+        if self.debug_counter < 5:
+            avg_gate = dbg_gate_sum / max(1, dbg_cls_count)
+            avg_hard = dbg_hard_sum / max(1, dbg_cls_count)
+            try:
+                rob_val = float(rob_loss.detach().cpu())
+            except Exception:
+                rob_val = 0.0
+            print(f"[CEM-GATE][{self.debug_counter}] classes={dbg_cls_count} gate_d={avg_gate:.3f} hard_gate={avg_hard:.3f} rob_loss={rob_val:.4f}")
+            self.debug_counter += 1
+
         return rob_loss, intra_mse
 def init_weights(m): # weight initialization
     if type(m) == nn.Linear:
