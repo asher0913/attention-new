@@ -167,6 +167,14 @@ class SlotCrossAttentionCEM(nn.Module):
         self.snr_sharp = nn.Parameter(torch.tensor(10.0))
         # Debug counter for lightweight logging
         self.debug_counter = 0
+        self.call_count = 0
+        # Early shutoff knobs (only within attention surrogate)
+        self.early_shut_steps = 100
+        self.early_hard_thresh = 0.5
+        self.early_gate_thresh = 0.6
+        self.print_every = 200
+        # Debug counter for lightweight logging
+        self.debug_counter = 0
 
     def forward(self, features, labels, unique_labels):
         device, dtype = features.device, features.dtype
@@ -181,9 +189,11 @@ class SlotCrossAttentionCEM(nn.Module):
         logvar_thr = torch.tensor(max(self.var_threshold * (self.reg_strength ** 2), 1e-8) + gamma,
                                   device=device, dtype=dtype)
 
-        # Debug accumulators
+        # Bump call counter and init debug accumulators
+        self.call_count += 1
         dbg_gate_sum = 0.0
         dbg_hard_sum = 0.0
+        dbg_base_sum = 0.0
         dbg_cls_count = 0
 
         for cls in unique_labels:
@@ -239,6 +249,7 @@ class SlotCrossAttentionCEM(nn.Module):
             dbg_gate_sum += float(gate_d.mean().detach().cpu())
             dbg_hard_sum += float(hard_gate.mean().detach().cpu())
             dbg_cls_count += 1
+            dbg_base_sum += float(base_ce.mean().detach().cpu())
 
             # -------- Slot mass gating (sharpened) --------
             weights = (slot_mass / float(M))  # [S]
@@ -269,16 +280,27 @@ class SlotCrossAttentionCEM(nn.Module):
             rob_loss = torch.zeros((), device=device, dtype=dtype)
             intra_mse = torch.zeros((), device=device, dtype=dtype)
             
-        # Lightweight debug (first 5 calls)
-        if self.debug_counter < 5:
-            avg_gate = dbg_gate_sum / max(1, dbg_cls_count)
-            avg_hard = dbg_hard_sum / max(1, dbg_cls_count)
-            try:
-                rob_val = float(rob_loss.detach().cpu())
-            except Exception:
-                rob_val = 0.0
-            print(f"[CEM-GATE][{self.debug_counter}] classes={dbg_cls_count} gate_d={avg_gate:.3f} hard_gate={avg_hard:.3f} rob_loss={rob_val:.4f}")
-            self.debug_counter += 1
+        # Aggregate debug stats
+        avg_gate = dbg_gate_sum / max(1, dbg_cls_count)
+        avg_hard = dbg_hard_sum / max(1, dbg_cls_count)
+        avg_base = dbg_base_sum / max(1, dbg_cls_count)
+
+        # Early shutoff: if early steps or gates indicate broad activation, suppress CEM this call
+        early_shut = (self.call_count <= self.early_shut_steps) or (avg_hard > float(self.early_hard_thresh)) or (avg_gate > float(self.early_gate_thresh))
+        if early_shut:
+            rob_loss = torch.zeros((), device=device, dtype=dtype)
+            # Optional: also zero intra_mse contribution to avoid misleading logs (keep as-is)
+            if self.debug_counter < 5 or (self.call_count % self.print_every == 0):
+                print(f"[CEM-GATE][SHUTOFF step={self.call_count}] classes={dbg_cls_count} gate_d={avg_gate:.3f} hard_gate={avg_hard:.3f} base={avg_base:.3f}")
+                self.debug_counter += 1
+        else:
+            if self.debug_counter < 5 or (self.call_count % self.print_every == 0):
+                try:
+                    rob_val = float(rob_loss.detach().cpu())
+                except Exception:
+                    rob_val = 0.0
+                print(f"[CEM-GATE][OK step={self.call_count}] classes={dbg_cls_count} gate_d={avg_gate:.3f} hard_gate={avg_hard:.3f} base={avg_base:.3f} rob_loss={rob_val:.4f}")
+                self.debug_counter += 1
 
         return rob_loss, intra_mse
 def init_weights(m): # weight initialization
