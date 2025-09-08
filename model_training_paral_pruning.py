@@ -149,8 +149,8 @@ class SlotCrossAttentionCEM(nn.Module):
         B_total = features.size(0)
         gamma = 1e-6  # Smaller gamma for better numerical stability
         
-        # Use absolute threshold instead of scaling by reg_strength^2 to avoid overly small thresholds
-        logvar_thr = torch.tensor(max(self.var_threshold, 1e-8) + gamma,
+        # Threshold uses var_threshold scaled by reg_strength^2 (original design)
+        logvar_thr = torch.tensor(max(self.var_threshold * (self.reg_strength ** 2), 1e-8) + gamma,
                                   device=device, dtype=dtype)
         
         for cls in unique_labels:
@@ -316,13 +316,10 @@ class MIA_train: # main class for every thing
                  load_from_checkpoint = False, bottleneck_option="None", measure_option=False,
                  optimize_computation=1, decoder_sync = False, bhtsne_option = False, gan_loss_type = "SSIM", attack_confidence_score = False,
                  ssim_threshold = 0.0,var_threshold = 0.1, finetune_freeze_bn = False, load_from_checkpoint_server = False, source_task = "cifar100", 
-                 save_activation_tensor = False, save_more_checkpoints = False, dataset_portion = 1.0, noniid = 1.0,
-                 cem_mode: str = "gmm", cem_strict_replace: bool = False):
+                 save_activation_tensor = False, save_more_checkpoints = False, dataset_portion = 1.0, noniid = 1.0):
         torch.manual_seed(random_seed)
         np.random.seed(random_seed)
         self.arch = arch
-        self.cem_mode = cem_mode
-        self.cem_strict_replace = cem_strict_replace
         self.bhtsne = bhtsne_option
         self.batch_size = batch_size
         self.lr = learning_rate
@@ -366,8 +363,6 @@ class MIA_train: # main class for every thing
         
         self.warm = 1
         self.current_epoch = 0
-        # if strict replace, no delay; otherwise use a safe delay
-        self.robust_start_epoch = 0 if self.cem_strict_replace else 20
         self.scheme = scheme
 
         # migrate old naming:
@@ -505,8 +500,8 @@ class MIA_train: # main class for every thing
         
         ''' Activation Defense (end)'''
 
-        # Choose which CEM surrogate to use
-        self.use_attention_cem = (self.cem_mode == "attention")
+        # Always use attention CEM surrogate to replace GMM (only module difference)
+        self.use_attention_cem = True
         self.attention_cem = None
 
 
@@ -517,22 +512,6 @@ class MIA_train: # main class for every thing
         actual_num_users = 1
         self.collude_use_public=False
         num_workers=8
-        # If strict replace mode: keep pipeline identical to CEM-main except the CEM surrogate itself
-        if self.cem_strict_replace:
-            self.AT_regularization_option = "None"
-            self.AT_regularization_strength = 0.0
-            self.regularization_option = "None"
-            self.regularization_strength = 0.0
-            self.local_DP = False
-            self.dropout_defense = False
-            self.topkprune = False
-            self.gan_regularizer = False
-            # force off SCA
-            self.SCA = False
-            # map sgm arch to non-sgm
-            if isinstance(self.arch, str) and self.arch.endswith("_sgm"):
-                self.arch = self.arch.replace("_sgm", "")
-
         # setup dataset
         if self.dataset == "cifar10":
             self.client_dataloader, self.mem_trainloader, self.mem_testloader = get_cifar10_trainloader(batch_size=self.batch_size,
@@ -1151,7 +1130,7 @@ class MIA_train: # main class for every thing
 
 
     '''Main training function, the communication between client/server is implicit to keep a fast training speed'''
-    def train_target_step(self, x_private, label_private, adding_noise, random_ini_centers, client_id=0):
+    def train_target_step(self, x_private, label_private, adding_noise,random_ini_centers,centroids_list,weights_list,cluster_variances_list,client_id=0):
         # 每个 step 必须先清梯度，避免跨 step 累积导致学习无效
         self.optimizer_zero_grad()
         self.f_tail.train()
@@ -1173,7 +1152,7 @@ class MIA_train: # main class for every thing
 
 
 
-        if not random_ini_centers and self.lambd>0 and (self.current_epoch >= self.robust_start_epoch):
+        if not random_ini_centers and self.lambd>0:
             try:
                 if self.use_attention_cem:
                     # Attention-based CEM: flatten conv features to [B,D]
@@ -1198,9 +1177,6 @@ class MIA_train: # main class for every thing
                                 var_threshold=self.var_threshold,
                                 reg_strength=self.regularization_strength,
                             ).to(feats_flat.device)
-                            # Freeze attention surrogate params so we only backprop to encoder features
-                            for p in self.attention_cem.parameters():
-                                p.requires_grad_(False)
                         rob_loss, intra_class_mse = self.attention_cem(feats_flat, label_private, unique_labels)
                         
                         # Additional safety check
@@ -1835,14 +1811,15 @@ class MIA_train: # main class for every thing
             self.logger.debug("GAN training interval N (once every N step) is set to {}!".format(interval))
             
             adding_noise=False
-            # GMM-related placeholders removed; attention-CEM is the only surrogate in this project
+            centroids_list= [torch.tensor(float('nan')) for _ in range(self.num_class)]
+            weights_list= [torch.tensor(float('nan')) for _ in range(self.num_class)]
+            cluster_variances_list=[torch.tensor(float('nan')) for _ in range(self.num_class)]
             #Main Training
             lambd_start= self.lambd 
             lambd_end=lambd_start*2
             acc_list=[]
             rob_list= []
             for epoch in range(1, self.n_epochs+1):
-                self.current_epoch = epoch
                 ep_start_time = time.time() 
                 if epoch > self.warm:
                     self.scheduler_step(epoch)
@@ -1903,7 +1880,7 @@ class MIA_train: # main class for every thing
                             
                             # Train step (client/server)
                             # print(images.shape)
-                            train_loss, f_loss, z_private = self.train_target_step(images, labels, adding_noise, random_ini_centers, client_id)
+                            train_loss, f_loss, z_private = self.train_target_step(images, labels, adding_noise,random_ini_centers,centroids_list,weights_list,cluster_variances_list,client_id)
 
                             train_loss_list.append(torch.tensor(train_loss))
                             f_loss_list.append(torch.tensor(f_loss))
