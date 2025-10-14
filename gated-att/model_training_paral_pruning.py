@@ -297,6 +297,7 @@ class MIA_train: # main class for every thing
             self.logger = setup_logger('{}_logger'.format(str(save_dir)), model_log_file, level=logging.DEBUG)
         
         self.warm = 1
+        self.current_epoch = 0
         self.scheme = scheme
 
         # migrate old naming:
@@ -433,6 +434,10 @@ class MIA_train: # main class for every thing
 
         # Switch from GMM/KMeans surrogate to gated-attention surrogate
         self.gated_attention_cem = None
+        self._gated_att_registered = False
+        self.attention_warmup_epochs = 5
+        self.attention_loss_scale = 0.1
+        self.global_train_step = 0
 
 
         # client sampling: dividing datasets to actual number of clients, self.num_clients is fake num of clients for ease of simulation.
@@ -727,6 +732,7 @@ class MIA_train: # main class for every thing
         self.f.train()
         x_private = x_private.cuda()
         label_private = label_private.cuda()
+        self.global_train_step += 1
 
         # Freeze batchnorm parameter of the client-side model.
         if self.load_from_checkpoint and self.finetune_freeze_bn:
@@ -742,7 +748,12 @@ class MIA_train: # main class for every thing
 
 
         device = z_private.device
-        if not random_ini_centers and self.lambd > 0:
+        use_attention = (
+            not random_ini_centers
+            and self.lambd > 0
+            and self.current_epoch > self.attention_warmup_epochs
+        )
+        if use_attention:
             if z_private.dim() == 4:
                 B, C, H, W = z_private.shape
                 feats_flat = z_private.view(B, -1)
@@ -761,9 +772,22 @@ class MIA_train: # main class for every thing
                         var_threshold=self.var_threshold,
                         reg_strength=self.regularization_strength,
                     ).to(device)
+                    self.gated_attention_cem.train()
+                    if not self._gated_att_registered:
+                        base_group = self.optimizer.param_groups[0]
+                        self.optimizer.add_param_group({
+                            'params': self.gated_attention_cem.parameters(),
+                            'lr': base_group.get('lr', self.lr),
+                            'momentum': base_group.get('momentum', 0.0),
+                            'weight_decay': base_group.get('weight_decay', 0.0),
+                        })
+                        self._gated_att_registered = True
+                else:
+                    self.gated_attention_cem.train()
                 rob_loss, intra_class_mse = self.gated_attention_cem(
                     feats_flat, label_private, unique_labels
                 )
+                rob_loss = rob_loss * self.attention_loss_scale
                 if torch.isnan(rob_loss) or torch.isinf(rob_loss):
                     print("Warning: NaN/Inf in rob_loss, resetting to zero")
                     rob_loss = torch.zeros((), device=device)
@@ -1385,6 +1409,7 @@ class MIA_train: # main class for every thing
             acc_list=[]
             rob_list= []
             for epoch in range(1, self.n_epochs+1):
+                self.current_epoch = epoch
                 ep_start_time = time.time() 
                 if epoch > self.warm:
                     self.scheduler_step(epoch)
