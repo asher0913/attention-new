@@ -608,6 +608,9 @@ class MIA_train: # main class for every thing
         # Always use attention CEM surrogate to replace GMM (only module difference)
         self.use_attention_cem = True
         self.attention_cem = None
+        self._attention_cem_registered = False
+        self.attention_warmup_epochs = 5
+        self.attention_loss_scale = 0.1
 
 
         # client sampling: dividing datasets to actual number of clients, self.num_clients is fake num of clients for ease of simulation.
@@ -1255,50 +1258,65 @@ class MIA_train: # main class for every thing
 
         unique_labels = torch.unique(label_private)
 
+        device = z_private.device
+        use_attention = (
+            self.use_attention_cem
+            and not random_ini_centers
+            and self.lambd > 0
+            and self.current_epoch > self.attention_warmup_epochs
+        )
 
-
-        if not random_ini_centers and self.lambd>0:
-            try:
-                if self.use_attention_cem:
-                    # Attention-based CEM: flatten conv features to [B,D]
-                    if z_private.dim() == 4:
-                        B, C, H, W = z_private.shape
-                        feats_flat = z_private.view(B, -1)
-                    else:
-                        feats_flat = z_private
-                    
-                    # Check for NaN or Inf in features
-                    if torch.isnan(feats_flat).any() or torch.isinf(feats_flat).any():
-                        print("Warning: NaN/Inf detected in features, skipping CEM calculation")
-                        rob_loss, intra_class_mse = torch.tensor(0.0, device=z_private.device), torch.tensor(0.0, device=z_private.device)
-                    else:
-                        if self.attention_cem is None:
-                            self.attention_cem = SlotCrossAttentionCEM(
-                                feature_dim=feats_flat.size(1),
-                                num_slots=8,
-                                num_heads=4,
-                                num_iterations=3,
-                                eps_var=1e-4,
-                                var_threshold=self.var_threshold,
-                                reg_strength=self.regularization_strength,
-                            ).to(feats_flat.device)
-                        rob_loss, intra_class_mse = self.attention_cem(feats_flat, label_private, unique_labels)
-                        
-                        # Additional safety check
-                        if torch.isnan(rob_loss) or torch.isinf(rob_loss):
-                            print("Warning: NaN/Inf in rob_loss, setting to 0")
-                            rob_loss = torch.tensor(0.0, device=z_private.device)
-                        if torch.isnan(intra_class_mse) or torch.isinf(intra_class_mse):
-                            print("Warning: NaN/Inf in intra_class_mse, setting to 0")
-                            intra_class_mse = torch.tensor(0.0, device=z_private.device)
+        if use_attention:
+            if z_private.dim() == 4:
+                feats_flat = z_private.view(z_private.size(0), -1)
+            else:
+                feats_flat = z_private
+            if torch.isnan(feats_flat).any() or torch.isinf(feats_flat).any():
+                print("Warning: NaN/Inf detected in features, skipping CEM calculation")
+                rob_loss = torch.zeros((), device=device)
+                intra_class_mse = torch.zeros((), device=device)
+            else:
+                if self.attention_cem is None:
+                    self.attention_cem = SlotCrossAttentionCEM(
+                        feature_dim=feats_flat.size(1),
+                        num_slots=8,
+                        num_heads=4,
+                        num_iterations=3,
+                        eps_var=1e-4,
+                        var_threshold=self.var_threshold,
+                        reg_strength=self.regularization_strength,
+                    ).to(device)
+                    if not self._attention_cem_registered:
+                        base_group = self.optimizer.param_groups[0]
+                        self.optimizer.add_param_group({
+                            'params': self.attention_cem.parameters(),
+                            'lr': base_group.get('lr', self.lr),
+                            'momentum': base_group.get('momentum', 0.0),
+                            'weight_decay': base_group.get('weight_decay', 0.0),
+                        })
+                        self._attention_cem_registered = True
                 else:
-                    # If attention is disabled (should not happen in this project), fall back to zero loss
-                    rob_loss, intra_class_mse = torch.tensor(0.0, device=z_private.device), torch.tensor(0.0, device=z_private.device)
-            except Exception as e:
-                print(f"Error in CEM calculation: {e}")
-                rob_loss, intra_class_mse = torch.tensor(0.0, device=z_private.device), torch.tensor(0.0, device=z_private.device)
+                    self.attention_cem.train()
+                try:
+                    rob_loss, intra_class_mse = self.attention_cem(feats_flat, label_private, unique_labels)
+                except Exception as e:
+                    print(f"Error in attention CEM calculation: {e}")
+                    rob_loss = torch.zeros((), device=device)
+                    intra_class_mse = torch.zeros((), device=device)
+                else:
+                    rob_loss = rob_loss * self.attention_loss_scale
+                    if torch.isnan(rob_loss) or torch.isinf(rob_loss):
+                        print("Warning: NaN/Inf in rob_loss, setting to 0")
+                        rob_loss = torch.zeros((), device=device)
+                    if torch.isnan(intra_class_mse) or torch.isinf(intra_class_mse):
+                        print("Warning: NaN/Inf in intra_class_mse, setting to 0")
+                        intra_class_mse = torch.zeros((), device=device)
+        elif not random_ini_centers and self.lambd>0:
+            rob_loss = torch.zeros((), device=device)
+            intra_class_mse = torch.zeros((), device=device)
         else:
-            rob_loss,intra_class_mse=torch.tensor(0.0, device=z_private.device),torch.tensor(0.0, device=z_private.device)
+            rob_loss = torch.zeros((), device=device)
+            intra_class_mse = torch.zeros((), device=device)
         # assert 1==0, print(x_private.shape,label_private.shape,unique_values)
         # Final Prediction Logits (complete forward pass)
         if "Gaussian" in self.regularization_option: # and adding_noise:
@@ -1423,41 +1441,59 @@ class MIA_train: # main class for every thing
             
         # print(total_loss, f_loss)
        
+        attention_params = []
+        if use_attention and self.attention_cem is not None:
+            attention_params = list(self.attention_cem.parameters())
+        attention_gradients = None
+        encoder_gradients = {}
+
         if not random_ini_centers and self.lambd>0 and rob_loss.requires_grad:
             try:
                 # print(rob_loss)
                 rob_loss.backward(retain_graph=True)
-                encoder_gradients = {}
                 for name, param in self.f.named_parameters():
                     if param.grad is not None:
                         encoder_gradients[name] = param.grad.clone()
-                    else:
-                        encoder_gradients[name] = torch.zeros_like(param)
+                if attention_params:
+                    attention_gradients = []
+                    for param in attention_params:
+                        if param.grad is not None:
+                            attention_gradients.append(param.grad.clone())
+                        else:
+                            attention_gradients.append(None)
                 # optimizer.zero_grad()
                 self.optimizer_zero_grad()
             except Exception as e:
                 print(f"Error in rob_loss backward: {e}")
                 encoder_gradients = {}
+                attention_gradients = None
 
         total_loss.backward()
 
         if not random_ini_centers and self.lambd>0 and encoder_gradients:
             for name, param in self.f.named_parameters():
-                if param.grad is not None and name in encoder_gradients:
-                    try:
-                        if self.load_from_checkpoint:
+                if param.grad is None or name not in encoder_gradients:
+                    continue
+                try:
+                    if self.load_from_checkpoint:
+                        param.grad += self.lambd*encoder_gradients[name]
+                    else:
+                        if (self.train_scheduler.get_last_lr()[0])<0.00041: #strat to enhance rob when lr is small and acc is high
                             param.grad += self.lambd*encoder_gradients[name]
                         else:
-                            if (self.train_scheduler.get_last_lr()[0])<0.00041: #strat to enhance rob when lr is small and acc is high
-                                param.grad += self.lambd*encoder_gradients[name]
-                            else:
-                                param.grad +=self.lambd*encoder_gradients[name]*(0.001/self.train_scheduler.get_last_lr()[0])
-                    except Exception as e:
-                        print(f"Error adding rob gradients for {name}: {e}")
+                            param.grad +=self.lambd*encoder_gradients[name]*(0.001/self.train_scheduler.get_last_lr()[0])
+                except Exception as e:
+                    print(f"Error adding rob gradients for {name}: {e}")
 
-            # print('Nonekl' in self.regularization_option)
-            # print(self.regularization_option)
-            # print('consider kl loss')
+        if attention_gradients is not None and attention_params:
+            for param, grad in zip(attention_params, attention_gradients):
+                if grad is None:
+                    continue
+                if param.grad is None:
+                    param.grad = grad
+                else:
+                    param.grad += grad
+
         total_losses = total_loss.detach().cpu().numpy()
         f_losses = f_loss.detach().cpu().numpy()
         del total_loss, f_loss
@@ -1925,6 +1961,7 @@ class MIA_train: # main class for every thing
             acc_list=[]
             rob_list= []
             for epoch in range(1, self.n_epochs+1):
+                self.current_epoch = epoch
                 ep_start_time = time.time() 
                 if epoch > self.warm:
                     self.scheduler_step(epoch)
