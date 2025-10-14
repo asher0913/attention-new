@@ -923,10 +923,22 @@ class MIA_train: # main class for every thing
             
         # print(total_loss, f_loss)
        
+        attention_params = []
+        if use_attention and self.gated_attention_cem is not None:
+            attention_params = list(self.gated_attention_cem.parameters())
+        attention_gradients = None
+
         if not random_ini_centers and self.lambd>0 and rob_loss.requires_grad:
             # print(rob_loss)
             rob_loss.backward(retain_graph=True)
             encoder_gradients = {name: param.grad.clone() for name, param in self.f.named_parameters()}
+            if attention_params:
+                attention_gradients = []
+                for param in attention_params:
+                    if param.grad is not None:
+                        attention_gradients.append(param.grad.clone())
+                    else:
+                        attention_gradients.append(None)
             # optimizer.zero_grad()
             self.optimizer_zero_grad()
 
@@ -934,22 +946,31 @@ class MIA_train: # main class for every thing
 
         if not random_ini_centers and self.lambd>0 and encoder_gradients:
             for name, param in self.f.named_parameters():
-                if self.load_from_checkpoint:
-                    param.grad += self.lambd*encoder_gradients[name]
-                else:
-                    if (self.train_scheduler.get_last_lr()[0])<0.00041: #strat to enhance rob when lr is small and acc is high
+                try:
+                    if self.load_from_checkpoint:
                         param.grad += self.lambd*encoder_gradients[name]
                     else:
-                        param.grad +=self.lambd*encoder_gradients[name]*(0.001/self.train_scheduler.get_last_lr()[0])
+                        if (self.train_scheduler.get_last_lr()[0])<0.00041: #strat to enhance rob when lr is small and acc is high
+                            param.grad += self.lambd*encoder_gradients[name]
+                        else:
+                            param.grad +=self.lambd*encoder_gradients[name]*(0.001/self.train_scheduler.get_last_lr()[0])
+                except Exception as e:
+                    print(f"Error adding rob gradients for {name}: {e}")
 
-            # print('Nonekl' in self.regularization_option)
-            # print(self.regularization_option)
-            # print('consider kl loss')
+        if attention_gradients is not None and attention_params:
+            for param, grad in zip(attention_params, attention_gradients):
+                if grad is None:
+                    continue
+                if param.grad is None:
+                    param.grad = grad
+                else:
+                    param.grad += grad
+
         total_losses = total_loss.detach().cpu().numpy()
         f_losses = f_loss.detach().cpu().numpy()
         del total_loss, f_loss
 
-        return intra_class_mse, f_losses, z_private
+        return total_losses, f_losses, z_private
 
     # Main function for validation accuracy, is also used to get statistics
     def validate_target(self, client_id=0):
