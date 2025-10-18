@@ -131,7 +131,7 @@ class CrossAttention(nn.Module):
         return y
 
 class SlotCrossAttentionCEM(nn.Module):
-    def __init__(self, feature_dim=128, num_slots=8, num_heads=4, num_iterations=3,
+    def __init__(self, feature_dim=128, num_slots=12, num_heads=4, num_iterations=3,
                  eps_var=1e-4, var_threshold=0.1, reg_strength=0.0):
         super().__init__()
         self.slot_attention = SlotAttention(feature_dim, num_slots, num_iterations)
@@ -151,20 +151,20 @@ class SlotCrossAttentionCEM(nn.Module):
             nn.Sigmoid(),
         )
         # Class-level gate: scales CEM per class based on relative sample count (learnable)
-        self.class_gate_a = nn.Parameter(torch.tensor(10.0))   # sharpness
-        self.class_gate_b = nn.Parameter(torch.tensor(0.05))   # midpoint for M/B
+        self.class_gate_a = nn.Parameter(torch.tensor(12.0))   # sharpness
+        self.class_gate_b = nn.Parameter(torch.tensor(0.04))   # midpoint for M/B
 
         # Slot assignment temperature and slot mass sharpening (Mixture-of-Slots)
-        self.assign_temp = nn.Parameter(torch.tensor(10.0))  # β for soft assignment
-        self.slot_power = nn.Parameter(torch.tensor(2.0))    # sharpen slot mass weights
+        self.assign_temp = nn.Parameter(torch.tensor(12.0))  # β for soft assignment
+        self.slot_power = nn.Parameter(torch.tensor(2.5))    # sharpen slot mass weights
 
         # Softplus margin parameters (stabilize surrogate around threshold)
-        self.softplus_beta = nn.Parameter(torch.tensor(1.0))
-        self.margin_m = nn.Parameter(torch.tensor(0.1))
+        self.softplus_beta = nn.Parameter(torch.tensor(1.5))
+        self.margin_m = nn.Parameter(torch.tensor(0.05))
 
         # SNR hard-ish gate threshold and sharpness (per-dim)
-        self.snr_thresh = nn.Parameter(torch.tensor(0.3))
-        self.snr_sharp = nn.Parameter(torch.tensor(10.0))
+        self.snr_thresh = nn.Parameter(torch.tensor(0.25))
+        self.snr_sharp = nn.Parameter(torch.tensor(14.0))
         # Debug counter for lightweight logging
         self.debug_counter = 0
         self.call_count = 0
@@ -609,8 +609,8 @@ class MIA_train: # main class for every thing
         self.use_attention_cem = True
         self.attention_cem = None
         self._attention_cem_registered = False
-        self.attention_warmup_epochs = 5
-        self.attention_loss_scale = 0.1
+        self.attention_warmup_epochs = 3
+        self.attention_loss_scale = 0.25
 
 
         # client sampling: dividing datasets to actual number of clients, self.num_clients is fake num of clients for ease of simulation.
