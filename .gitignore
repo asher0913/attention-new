@@ -5,3 +5,5 @@
 *.pdf
 *.txt
 *.docx
+!proposal/
+!proposal/**
