@@ -1,6 +1,13 @@
-#!/bin/bash
-# 该脚本基于根目录的 run_exp.sh，调整了推荐的 slot+cross attention 超参数（λ = 24 等），
-# 直接在 Linux 上执行即可。
+﻿#!/bin/bash
+# Derived from root run_exp.sh with tuned slot+cross attention parameters (lambda=24 etc.).
+# Console output is mirrored to a timestamped log file in the same directory.
+
+script_dir="$(cd "$(dirname \"$0\")" && pwd)"
+script_name="$(basename \"$0\" .sh)"
+timestamp="$(date +\"%Y%m%d_%H%M%S\")"
+log_file="${script_dir}/${script_name}_${timestamp}.log"
+
+exec > >(tee -a "$log_file") 2>&1
 
 GPU_id=0
 arch=vgg11_bn_sgm
