@@ -1,9 +1,11 @@
 /data
 /saves
 /CEM-main
+CEM-main/
 *.md
 *.pdf
 *.txt
 *.docx
 !proposal/
 !proposal/**
+latex/
