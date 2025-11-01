@@ -1,0 +1,34 @@
+           School of Computer Science – Coursework Issue Sheet 
+            Session                    2025-2026                                 Semester    Autumn 
+                                                                                             (Full Year 
+                                                                                             Module) 
+            Module Name                Individual Dissertation Single Honours    Code        COMP3050 
+            Module Convenor            Dr Matthew Pike 
+                                                                                              
+            Coursework Name            Project Proposal                          Weight      2% 
+            Deliverable                A document detailing the: Background & Motivation, Aims & Objectives, 
+                                       Workplan and References for the student’s FYP. 
+            Format                        •  The document should consist of a single PDF file.  
+                                          •  The word count for this assignment is limited to 2000 words, which is 
+                                             roughly equivalent to four A4 pages. Please note that the word limit 
+                                             does not apply to the cover page, references, or appendices. 
+                                             However, all other content within the document will contribute to the 
+                                             word count.  
+                                          •  There is no prescribed template, format, or referencing style that 
+                                             must be followed for this assignment.  
+                                          •  If you require guidance on these aspects, we recommend consulting 
+                                             your supervisor for advice.  
+                                        
+            Issue Date                 Beginning of Academic Year 
+            Submission Date            28 October 2025 @ 15:00 
+            Submission Mechanism       Via Moodle (Turnitin Assignment – “Project Proposal”) 
+            Late Policy                5 percentage points will be deducted per working day that the assignment is 
+                                       late, in accordance with the standard university penalty. 
+            Feedback Date              Within 15 working days following the deadline or submission date, whichever 
+                                       occurs last. 
+            Feedback Mechanism            •  Annotated report on Moodle 
+                                          •  In-person feedback provided by supervisor during supervision 
+                                             meeting 
+                                        
+            Instructions               See task description in lecture slides 
+           	 Assessment Criteria       Marking rubric distributed on Moodle 

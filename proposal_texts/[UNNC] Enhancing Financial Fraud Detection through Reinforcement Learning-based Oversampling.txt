@@ -1,0 +1,109 @@
+                    Project Proposal:
+           Enhancing Financial Fraud Detection
+          through Reinforcement Learning-based
+                      Oversampling
+                   Patience Chew Yee CHEAH
+                          20314828
+                    scypc3@nottingham.edu.cn
+                  Supervised by Dr Boon Giin LEE
+            School of Computer Science University of Nottingham Ningbo China
+              Background and Motivation
+              Due to the prevalence of digital payment and e-commerce, the rise in financial fraud
+              has become a concerning issue. Hence, studies adopted numerous machine learning algo-
+              rithms, including Random Forest, XGBoost, LightGBM, Feed-forward Neural Networks,
+              and Convolutional Neural Networks, to detect finance frauds automatically [1]. A recent
+              study [2] employed Reinforcement Learning (RL), an algorithm with an agent that tries
+              to maximize its cumulative reward when making sequences of decisions [3], to identify
+              finance fraud records, which outperformed most machine learning models.
+              The extreme class imbalance issue is a significant challenge faced by traditional machine
+              learning classifiers due to the skewed distribution of finance fraud datasets. Usually, the
+              number of fraud, or minority, samples is significantly lower than the legitimate ones. As
+              a result, the diagnosis models tend to favor the majority class, or the nonfraud class,
+              causing high false-positive rates [4].
+              Numerousoversampling methods were proposed to increase the minority class representa-
+              tion by duplicating the minority samples or generating new ones. The Synthetic Minority
+              Oversampling Technique (SMOTE) [5] and its variations are the standard approaches
+              for class imbalance handling at the data level [6].  Generative Adversarial Networks
+              (GAN) [7] has also shown promising performance in generating minority samples in fi-
+              nance fraud datasets [8]. To overcome the weak points of individual SMOTE and GAN,
+              the SMOTified-GAN [9], a hybrid method, was proposed.
+              However, traditional oversampling techniques, which purely focus on the dataset dis-
+              tribution, can sometimes overfit the classifiers. Hence, studies have proposed methods
+              considering the classifiers’ performance when generating minority samples. A study [10]
+              adopted RL to synthesize minority samples directly based on the classifier’s performance.
+              AESMOTE [11] employs RL to select training samples to train an RL diagnosis model
+              from an augmented dataset that contains original and SMOTE-generated minority sam-
+              ples. The reward obtained by the RL agent depends on the diagnosis model’s classification
+              performance. Similarly, the DiagSelect [12] framework adopts RL to pick a suitable subset
+              of training samples to train machine learning classifiers.
+              While the RL oversampling methods demonstrated improvements from the traditional
+              methods, either through generating minority samples or selecting training samples, their
+              resulting F1-scores usually did not exceed 0.9 [10, 11, 12]. Therefore, it is worth redesign-
+              ing the RL oversampling algorithm to optimize the generated minority samples to improve
+              the classifiers’ final performances.
+                                                        1
+       Aims and Objectives
+       This project aims to tackle the class imbalance problem in the finance fraud dataset using
+       a RL-based oversampling technique to improve the classification performance of machine
+       learning models. The technique can optimize the generated samples by maximizing a re-
+       wardwhichisdefinedbasedontheclassifier’sperformancewhentrainedontheaugmented
+       dataset. To achieve this aim, the objectives are:
+        1. To review the oversampling methods for class imbalance handling, including the
+          utilization of RL in tackling this issue.
+        2. To investigate the performances of existing machine learning classifiers on finance
+          fraud or anomaly detection.
+        3. To design an oversampling method using RL to generate high-quality samples or
+          select suitable samples to improve the performance of the classifiers.
+        4. ToevaluatetheproposedRL-basedoversamplingmethodondifferentmachinelearn-
+          ing classifiers.
+                           2
+       Project Plan
+       To accomplish the objectives of this project, milestones have been identified with appro-
+       priate time-frames, showing in Table 3.1. The first month will be spent on preliminary
+       work and literature review. During this period, state-of-the-art fraud detection methods
+       and oversampling techniques will be reviewed. Since this project adopts RL and machine
+       learning, these two techniques will also be studied.
+       After conducting background studies, an RL-based oversampling method will be designed,
+       implemented, and tested. The remainder of the autumn semester will focus on completing
+       the interim report.
+       The first half of the spring semester primarily focuses on modifying and improving the
+       initial design. The ultimate findings will be written either in a journal or a conference
+       paper. Since writings take time, a three-month time-frame is allotted to complete the
+       writing tasks.
+                 Figure 3.1: Project Milestones and Time Plan
+                            3
+       References
+        [1] X. Zhu, X. Ao, Z. Qin, Y. Chang, Y. Liu, Q. He, and J. Li, “Intelligent financial fraud
+         detection practices in post-pandemic era,” The Innovation, vol. 2, no. 4, p. 100176,
+         2021.
+        [2] S. Vimal, K. Kayathwal, H. Wadhwa, and G. Dhama, “Application of deep reinforce-
+         ment learning to payment fraud,” 2021.
+        [3] F. AlMahamid and K. Grolinger, “Reinforcement learning algorithms: An overview
+         and classification,” in 2021 IEEE Canadian Conference on Electrical and Computer
+         Engineering (CCECE), pp. 1–7, 2021.
+        [4] B. Krawczyk, “Learning from imbalanced data: open challenges and future direc-
+         tions,” Progress in Artificial Intelligence, vol. 5, pp. 221–232, 2016.
+        [5] N. V. Chawla, K. W. Bowyer, L. O. Hall, and W. P. Kegelmeyer, “SMOTE: Synthetic
+         minority over-sampling technique,” J. Artif. Int. Res., vol. 16, p. 321–357, Jun 2002.
+        [6] A. Fern´andez, S. Garc´ıa, F. Herrera, and N. V. Chawla, “SMOTE for learning from
+         imbalanceddata: Progressandchallenges, markingthe15-yearanniversary,” J. Artif.
+         Int. Res., vol. 61, p. 863–905, jan 2018.
+        [7] I. J. Goodfellow, J. Pouget-Abadie, M. Mirza, B. Xu, D. Warde-Farley, S. Ozair,
+         A. Courville, and Y. Bengio, “Generative adversarial nets,” in Proceedings of the
+         27th International Conference on Neural Information Processing Systems - Volume
+         2, NIPS’14, (Cambridge, MA, USA), p. 2672–2680, MIT Press, 2014.
+        [8] U. Fiore, A. De Santis, F. Perla, P. Zanetti, and F. Palmieri, “Using generative
+         adversarial networks for improving classification effectiveness in credit card fraud
+         detection,” Information Sciences, vol. 479, pp. 448–455, 2019.
+        [9] A. Sharma, P. K. Singh, and R. Chandra, “SMOTified-GAN for class imbalanced
+         pattern classification problems,” IEEE Access, vol. 10, pp. 30655–30665, 2022.
+       [10] Y. Zhou, J. Shu, X. Zhong, X. Huang, C. Luo, and J. Ai, “Oversampling algorithm
+         based on reinforcement learning in imbalanced problems,” in GLOBECOM 2020 -
+         2020 IEEE Global Communications Conference, pp. 01–06, 2020.
+       [11] X. Ma and W. Shi, “AESMOTE: Adversarial reinforcement learning with SMOTE
+         for anomaly detection,” IEEE Transactions on Network Science and Engineering,
+         vol. 8, no. 2, pp. 943–956, 2021.
+       [12] S. Fan, X. Zhang, and Z. Song, “Imbalanced sample selection with deep reinforcement
+         learning for fault diagnosis,” IEEE Transactions on Industrial Informatics, vol. 18,
+         no. 4, pp. 2518–2527, 2022.
+                            4

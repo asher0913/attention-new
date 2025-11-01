@@ -7,3 +7,9 @@
 *.docx
 !proposal/
 !proposal/**
+!proposal_texts/
+!proposal_texts/**
+*.png
+*.jpg
+*.jpeg
+*.gif
