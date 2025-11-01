@@ -1,15 +1,20 @@
 /data
 /saves
 /CEM-main
+CEM-main/
 *.md
 *.pdf
 *.txt
 *.docx
 !proposal/
 !proposal/**
+<<<<<<< HEAD
 !proposal_texts/
 !proposal_texts/**
 *.png
 *.jpg
 *.jpeg
 *.gif
+=======
+latex/
+>>>>>>> 42e3101b93bf7fdf0ed0a1cdc94c3266ea5cccb5
