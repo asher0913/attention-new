@@ -1,0 +1,4 @@
+\beamer@sectionintoc {1}{项目背景}{3}{0}{1}
+\beamer@sectionintoc {2}{Slot + Gated Cross Attention}{5}{0}{2}
+\beamer@sectionintoc {3}{Gated Attention Pooling}{10}{0}{3}
+\beamer@sectionintoc {4}{对比总结}{14}{0}{4}

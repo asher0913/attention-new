@@ -17,3 +17,5 @@ CEM-main/
 *.gif
 !latex/
 !latex/**
+!documents/
+!documents/**

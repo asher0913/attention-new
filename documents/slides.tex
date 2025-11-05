@@ -1,0 +1,305 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{Madrid}
+\usepackage{CJKutf8}
+\usepackage{appendixnumberbeamer}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric}
+\setbeamertemplate{caption}[numbered]
+\setbeamerfont{footnote}{size=\tiny}
+\setbeamertemplate{itemize items}[circle]
+\setbeamertemplate{enumerate items}[default]
+
+\title{Attention-CEM 防御框架总览}
+\subtitle{Slot+Gated Cross Attention vs. Gated Attention Pooling}
+\author{项目阶段性汇报}
+\date{组会交流}
+\institute{Attention Privacy Project}
+
+\newcommand{\highlight}[1]{\textcolor{mDarkTeal}{\textbf{#1}}}
+
+\begin{document}
+\begin{CJK*}{UTF8}{gbsn}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}{演示地图}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{为什么}\small
+        \begin{itemize}
+          \item 协同推理的隐私风险
+          \item CEM 框架基本思路
+        \end{itemize}
+      \end{block}
+      \begin{block}{Slot+Gated Cross Attn}\small
+        \begin{itemize}
+          \item 模块结构图
+          \item 数学细节与门控
+          \item 训练集成
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Gated Attention Pooling}\small
+        \begin{itemize}
+          \item 方案动机与流程
+          \item 条件熵代理公式
+        \end{itemize}
+      \end{block}
+      \begin{block}{总结与计划}\small
+        \begin{itemize}
+          \item 两者并列对比
+          \item 实践建议与风险点
+          \item 下一步重点
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\section{项目背景}
+
+\begin{frame}{协同推理与 CEM 目标}
+  \begin{columns}[T]
+    \begin{column}{0.6\textwidth}
+      \begin{itemize}
+        \item \highlight{协同推理}:本地编码器 $F_e$ 产生中间特征 $z$，云端解码器 $F_d$ 完成预测。
+        \item \highlight{隐私问题}:中间特征易被模型反演攻击恢复输入。
+        \item \highlight{CEM 思路}:最大化条件熵 $H(x|z)$，提高攻击者的最优重建误差 $\xi$。
+        \item 原始代码使用 \highlight{KMeans/GMM} 近似条件熵，下文两套注意力框架即替换该近似器。
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.38\textwidth}
+      \begin{tikzpicture}[>=Stealth, thick, node distance=1.5cm]
+        \node[draw, rounded corners, minimum width=2.6cm, minimum height=1.1cm, fill=mLightBrown!30] (input) {本地输入 $x$};
+        \node[draw, rounded corners, right=of input, minimum width=2.7cm, fill=mLightGreen!30] (encoder) {编码器 $F_e$};
+        \node[draw, rounded corners, right=of encoder, minimum width=2.7cm, fill=mLightBlue!30] (server) {云端 $F_d$};
+        \node[draw, rounded corners, below=1.6cm of encoder, minimum width=4.1cm, fill=mDarkTeal!15] (cem) {CEM 代理:\small 关注 $H(x|z)$};
+        \draw[->] (input) -- (encoder);
+        \draw[->] (encoder) -- node[above]{特征 $z$} (server);
+        \draw[->, dashed] (encoder) -- (cem);
+        \draw[->, dashed] (cem) -- ++(1.8cm,0) |- (encoder);
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{训练循环中的注意力 CEM}
+  \begin{figure}
+    \centering
+    \begin{tikzpicture}[>=Stealth, thick, node distance=2.1cm]
+      \node[draw, rounded corners, minimum width=2.7cm, fill=mLightGreen!30] (encoder) {本地 $F_e$};
+      \node[draw, rounded corners, right=of encoder, minimum width=2.7cm, fill=mLightBrown!30] (defense) {防御 $\mathcal{M}$};
+      \node[draw, rounded corners, right=of defense, minimum width=2.7cm, fill=mLightBlue!30] (decoder) {云端 $F_d$};
+      \node[draw, rounded corners, below=1.8cm of defense, minimum width=4cm, fill=mDarkTeal!15] (cem) {注意力 CEM 代理 $L_C$};
+      \draw[->] (encoder) -- node[above]{特征 $z$} (defense);
+      \draw[->] (defense) -- node[above]{扰动后 $z'$} (decoder);
+      \draw[->, dashed] (encoder) -- (cem);
+      \draw[->, dashed] (cem) -- ++(0,0.1cm) node[right]{\small $\lambda\nabla L_C$} |- (encoder);
+      \draw[->, dashed] (decoder) |- ++(0,-1.2cm) -| (encoder) node[midway, below]{\small $\nabla L_D$};
+    \end{tikzpicture}
+  \end{figure}
+\end{frame}
+
+\section{Slot + Gated Cross Attention}
+
+\begin{frame}{结构鸟瞰图}
+  \begin{figure}
+    \centering
+    \begin{tikzpicture}[>=Stealth, thick, node distance=1.6cm]
+      \node[draw, rounded corners, minimum width=2.5cm, fill=mLightGreen!30] (tokens) {类内 tokens};
+      \node[draw, rounded corners, right=of tokens, minimum width=3cm, fill=mLightBlue!25] (slot) {SlotAttention\\(多轮竞争)};
+      \node[draw, rounded corners, right=of slot, minimum width=3.2cm, fill=mLightBrown!25] (cross) {Gated Cross-Attn\\(Flamingo 样式)};
+      \node[draw, rounded corners, right=of cross, minimum width=3.4cm, fill=mDarkTeal!20] (stats) {门控方差聚合\\$\Rightarrow L_C$};
+      \draw[->] (tokens) -- node[above]{归一化竞选} (slot);
+      \draw[->] (slot) -- node[above]{共享 slots} (cross);
+      \draw[->] (cross) -- node[above]{增强特征} (stats);
+    \end{tikzpicture}
+  \end{figure}
+  \vspace{-1em}
+  \begin{itemize}
+    \item 优势:显式建模多模态模式；门控丰富，能够“削”走冗余信息。
+    \item 难点:结构庞大，超参数多，需要细致日志监控。
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{SlotAttention 工作流}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \begin{enumerate}
+        \item LayerNorm 后得到 $K,V$。
+        \item 以学习到的 $\mu,\sigma$ 初始化 $S$ 个 slot。
+        \item 每轮更新:
+          \begin{itemize}
+            \item 归一化 slot→投影为查询 $Q$。
+            \item $r = \text{softmax}(KQ^\top)$，加入 $\epsilon$ 再归一化。
+            \item 使用 GRU+MLP 残差更新 slot 状态。
+          \end{itemize}
+      \end{enumerate}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \begin{block}{关键超参}
+        \begin{itemize}\small
+          \item slot 数量 $S=8$
+          \item 迭代次数 $T=3$
+          \item 温度缩放:$\texttt{slot	extunderscore dim}^{-1/4}$
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Gated Cross Attention 细节}
+  \begin{itemize}
+    \item 结构:\small
+      \[
+        y = q + \tanh(\alpha_{\text{attn}})\cdot \mathrm{CrossAttn}(q, s),\quad
+        y = y + \tanh(\alpha_{\text{ffn}})\cdot \mathrm{FFN}(\mathrm{LN}(y)).
+      \]
+    \item 多头交叉注意力:slots 作为 KV，类内样本为查询。
+    \item 门控参数初值小正 ($0.1$)，保证注意力/FFN 渐进式生效。
+    \item 每个子层前置 LayerNorm，提升训练稳定性。
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{多级门控 + CEM 代理}
+  \small
+  \begin{enumerate}
+    \item \highlight{Slot 方差}:$r_{ms}=\mathrm{softmax}(\beta\cdot\mathrm{sim}(x_m,s_s))$，求得 $\mu_s, \sigma^2_s$。
+    \item \highlight{Per-dim Gate}:LayerNorm($\log \sigma^2_s$)$\rightarrow$MLP$\rightarrow$Sigmoid。
+    \item \highlight{SNR Gate}:$g_{\text{snr}} = \sigma(\kappa (\sigma^2/(\mu^2+\epsilon) - \tau_{\text{snr}}))$。
+    \item \highlight{Softplus Margin}:$L_{\text{base}} = \frac{1}{\beta'}\log(1+e^{\beta'(\log \sigma^2 - \log \tau - m)})$。
+    \item \highlight{Slot Mass Gate}:$(\text{mass}/M)^{\gamma}$ 强调主导 slot。
+    \item \highlight{Class Gate}:$g_{\text{class}} = \sigma(a(M/B-b))$ 调节不同样本量类别。
+    \item \highlight{Early Shutoff}:前 100 步或门控统计过高立即输出 0，防止梯度抖动。
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}{训练集成}
+  \begin{enumerate}
+    \item Warmup:`self.attention\_warmup\_epochs = 3`。
+    \item 首次调用时把 `SlotCrossAttentionCEM` 参数加入主优化器。
+    \item `rob\_loss` 反向，缓存编码器/注意力梯度，再执行 $L_D$ 回传。
+    \item 将 CEM 梯度乘以 $\lambda$ 或 `attention\_loss\_scale` 重叠至编码器参数。
+    \item 保持与噪声、Dropout、ARL 等防御模块相同的调用顺序。
+  \end{enumerate}
+\end{frame}
+
+\section{Gated Attention Pooling}
+
+\begin{frame}{方案动机}
+  \begin{itemize}
+    \item Slot 方案在高分辨率或大 batch 下计算开销大、调参繁琐。
+    \item Gated Attention Pooling 借鉴多实例学习:用单注意力权重汇聚类内特征，结构极简，可快速部署。
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{流程图}
+  \begin{figure}
+    \centering
+    \begin{tikzpicture}[>=Stealth, thick, node distance=1.9cm]
+      \node[draw, rounded corners, minimum width=2.8cm, fill=mLightGreen!30] (tokens) {类内特征 $X$};
+      \node[draw, rounded corners, right=of tokens, minimum width=3.3cm, fill=mLightBlue!30] (gate) {Gated Pooling\\$\tanh(Vx)\odot\sigma(Ux)$};
+      \node[draw, rounded corners, right=of gate, minimum width=3.3cm, fill=mLightBrown!30] (stats) {加权均值/方差\\$\Rightarrow L_C$};
+      \draw[->] (tokens) -- node[above]{softmax 权重 $a_m$} (gate);
+      \draw[->] (gate) -- node[above]{汇聚结果} (stats);
+    \end{tikzpicture}
+  \end{figure}
+\end{frame}
+
+\begin{frame}{数学表达}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \small
+      \begin{align*}
+        a_m &= \frac{\exp\big(w^\top[\tanh(Vx_m)\odot\sigma(Ux_m)]\big)}{\sum_j \exp(\cdot)},\\
+        \mu &= \sum_m a_m x_m,\qquad
+        \sigma^2 = \sum_m a_m (x_m-\mu)^2,\\[0.3em]
+        L_C &= \max\{0,\ \log(\sigma^2+\gamma) - \log(\tau)\},\\
+        \tau &= \texttt{var\_threshold}\cdot\texttt{reg\_strength}^2 + \gamma.
+      \end{align*}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \begin{block}{特点}\small
+        \begin{itemize}
+          \item 仅需两层线性映射 + softmax，速度快。
+          \item 配合 LayerNorm 避免注意力塌缩。
+          \item 不再依赖 slot 或额外门控，调参集中在阈值与缩放。
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{训练集成要点}
+  \begin{itemize}
+    \item Warmup 更长（默认 5 个 epoch）以稳定 softmax 权重。
+    \item 首次调用时同样将模块参数加入主优化器。
+    \item `attention\_loss\_scale` 控制 CEM 梯度强度，默认 0.25。
+    \item 与 Slot 框架共享完全相同的噪声 / Dropout / ARL 链路。
+    \item 算力友好，适合快速验证或放大 batch 以估计鲁棒性。
+  \end{itemize}
+\end{frame}
+
+\section{对比总结}
+
+\begin{frame}{两种注意力方案对比}
+  \begin{table}[h]
+    \centering
+    \begin{tabular}{p{3.6cm}p{4.6cm}p{4.6cm}}
+      \toprule
+      & \textbf{Slot + Gated Cross Attn} & \textbf{Gated Attention Pooling} \\
+      \midrule
+      表达能力 & 多 slot + 多头 cross-attn，精细建模类内多模态 & 单注意力分布，更偏向“聚合摘要” \\
+      数值稳定 & 依赖多级门控 + early shutoff 保护 & LayerNorm + softmax 足够稳定 \\
+      参数/算力 & GRU/slot/门控较多，算力大 & 轻量 MLP，适合高分辨率或大 batch \\
+      调参成本 & 需同时调 slot	extunderscore power、class	extunderscore gate、阈值等 & 主要关注 var	extunderscore threshold 与 loss 缩放 \\
+      适用场景 & 复杂多模态、隐私泄露风险高的数据集 & 快速迭代、资源受限或原型验证 \\
+      \bottomrule
+    \end{tabular}
+  \end{table}
+\end{frame}
+
+\begin{frame}{实践建议与排错}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{优先检查}\small
+        \begin{itemize}
+          \item Warmup 是否完成？`current_epoch` 是否及时更新？
+          \item `rob_loss`、类内 MSE 是否出现 NaN/Inf？
+          \item Slot 框架的门控均值是否过高触发 early shutoff？
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{block}{调参指南}\small
+        \begin{itemize}
+          \item Slot 框架:先固定噪声强度，再调整 `slot_power`、`class_gate_a/b`、`attention_loss_scale`。
+          \item Gated 框架:锁定 `reg_strength` 后，细调 `var_threshold` 与 loss 缩放系数。
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{下一步计划}
+  \begin{itemize}
+    \item 在 CIFAR-10/100、FaceScrub、TinyImageNet 等数据集上完成系统实验。
+    \item 与原 GMM 方案对比 MIA 指标（MSE/SSIM）与训练开销。
+    \item 尝试混合策略:Gated pooling 预筛查 $\rightarrow$ Slot 框架精细优化高风险类别。
+    \item 深入分析 early shutoff、class gate 等超参对隐私-准确率折中的影响。
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[plain]
+  \begin{center}
+    {\Huge 感谢指导，欢迎讨论！}
+  \end{center}
+\end{frame}
+
+\end{CJK*}
+\end{document}
