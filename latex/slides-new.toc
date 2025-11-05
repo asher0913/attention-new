@@ -1,0 +1,4 @@
+\beamer@sectionintoc {1}{Background}{3}{0}{1}
+\beamer@sectionintoc {2}{Slot + Gated Cross Attention}{6}{0}{2}
+\beamer@sectionintoc {3}{Gated Attention Pooling}{12}{0}{3}
+\beamer@sectionintoc {4}{Comparison \& Next Steps}{18}{0}{4}
