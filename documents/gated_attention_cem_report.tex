@@ -1,0 +1,158 @@
+\documentclass[12pt]{article}
+\usepackage{CJKutf8}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\geometry{a4paper, margin=1in}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=cyan
+}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{2em}
+
+\title{Gated Attention 条件熵代理易懂手册}
+\author{自动生成}
+\date{\today}
+
+\begin{document}
+\begin{CJK*}{UTF8}{gbsn}
+\maketitle
+
+\begin{abstract}
+这份文档面向第一次接触 \texttt{gated-att/} 的同学，目标是把 Gated Attention 条件熵代理讲成“看完就懂、上手就能用”的版本。我们会用通俗比喻串联整条链路：为什么要加这个模块、每一步在代码里的位置、它和 Slot+Cross 方案的区别、调参时应该先动哪个旋钮。你可以把它当作一篇讲稿/说明书，直接拿去给团队做分享。
+\end{abstract}
+
+\tableofcontents
+
+\section{一张图先感知：我们在解决什么？}
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{目的}：让同一类别的特征更集中（条件熵更低），减少模型泄露细节的风险。
+    \item \textbf{做法}：不做复杂聚类，只学一个“注意力分布”，挑出类内真正关键的样本，按权重算出“类内波动大不大”。
+    \item \textbf{位置}：所有逻辑都在 \texttt{gated-att/model\_training\_paral\_pruning.py} 的 \texttt{GatedAttentionPooling} 和 \texttt{GatedAttentionCEM} 中。
+\end{itemize}
+
+\section{整体故事：像是给班级点名}
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{先给每个班（类别）归好队}：把同一标签的特征拿出来。
+    \item \textbf{点名 + 权重}：Gated Attention 会给每个学生一个“重要程度”。被判定为关键的样本权重高，普通样本权重低。
+    \item \textbf{算班里的平均表现和波动}：根据权重算加权均值、加权方差，看看班里到底稳不稳。
+    \item \textbf{超过阈值就扣分}：如果某个维度波动太大超过阈值，就对总损失贡献一个正则惩罚。
+    \item \textbf{加权汇总到总损失}：班里人多的影响更大，人少的影响更小。
+\end{enumerate}
+
+\section{组件 1：GatedAttentionPooling（谁是关键样本？）}
+\subsection*{3.1 直觉解释}
+这一步像是给班里的每个学生打一个“关注度分数”。模型通过两个分支来决定：
+\begin{itemize}[leftmargin=2em]
+    \item $\tanh$ 分支（$W_V$）告诉我们：“这个学生的特征方向怎么看？”
+    \item $\sigma$ 分支（$W_U$）像一扇门：“我要不要放大/缩小这名学生的影响？”
+\end{itemize}
+两个分支相乘后，再映射成一个标量，最后经过 softmax，得到一组权重 $a$，保证所有权重加起来是 1。
+
+\subsection*{3.2 和代码对照}
+\begin{itemize}[leftmargin=2em]
+    \item 定义位置：第 17--44 行。
+    \item 输入尺寸：[样本数 $M$, 特征维 $D$]。
+    \item 输出：形状 [M, 1] 的 softmax 权重。
+\end{itemize}
+
+\section{组件 2：GatedAttentionCEM（用权重来判定是否“稳”）}
+\subsection*{4.1 步骤拆解}
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{LayerNorm}：防止某些维度异常大造成偏差。
+    \item \textbf{调用池化}：拿到上一节的权重 $a$。
+    \item \textbf{算加权均值 $\mu_c$}：像做“班级平均成绩”，只是每个人成绩乘以他的权重。
+    \item \textbf{算加权方差 $\sigma_c^2$}：看加权后的样本偏离均值多少。
+    \item \textbf{防止数值爆炸}：用 \texttt{eps} 把方差下界住，再取 $\log$。
+    \item \textbf{阈值判定}：如果 $\log\sigma_c^2$ 超过阈值，就记入惩罚；否则就是 0。阈值跟 \texttt{var\_threshold}、\texttt{reg\_strength} 有关。
+    \item \textbf{平均到类级指标 $L_c$}：对所有维度取平均，得到这个班级的“惩罚分”。
+    \item \textbf{计算类内 MSE}：只是为了日志监控，和梯度无关。
+    \item \textbf{按样本占比加权}：班里人越多，在总损失里占比越大。
+\end{enumerate}
+
+\subsection*{4.2 关键变量一览}
+\begin{itemize}[leftmargin=2em]
+    \item \texttt{var\_threshold}：阈值基准，越大越宽容。
+    \item \texttt{reg\_strength}：来自主程序的正则强度，和阈值一起决定严不严格。
+    \item \texttt{attention\_loss\_scale}：训练时会乘在 rob\_loss 上，控制梯度力度。
+\end{itemize}
+
+\section{训练循环里怎么接入？}
+\subsection*{5.1 触发条件}
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{三个开关}：不是随机中心、$\lambda > 0$、当前 epoch 超过 warmup。
+    \item \textbf{隐藏层宽度}：自动取 $\min(512, \max(64, D/4))$，不用手调。
+    \item \textbf{参数注册}：第一次建模块时会把参数加到优化器里。
+\end{itemize}
+
+\subsection*{5.2 梯度流程}
+\begin{enumerate}[leftmargin=2em]
+    \item rob\_loss 先反向一次，把梯度存下来。
+    \item 清梯度，对主任务反向。
+    \item 把正则梯度按学习率缩放后加回编码器参数。
+    \item 注意力模块的梯度直接累加。
+\end{enumerate}
+
+\subsection*{5.3 容错机制}
+\begin{itemize}[leftmargin=2em]
+    \item rob\_loss 或 intra\_mse 出现 NaN/Inf，会被置 0。
+    \item 如果类内样本数 $\leq 1$，直接跳过，保证梯度路径连续。
+\end{itemize}
+
+\section{Slot+Cross vs. Gated Attention：该用谁？}
+\subsection*{6.1 快速对比表}
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{Slot+Cross}：\\
+    优点——能建模多个子簇，对复杂数据更有力；\\
+    缺点——结构复杂，算力和调参成本更高。
+    \item \textbf{Gated Attention}：\\
+    优点——结构简单、只有一个注意力池化，部署轻量；\\
+    缺点——天然偏向“单簇”，对类内非常 multimodal 的数据可能不够精细。
+\end{itemize}
+
+\subsection*{6.2 建议}
+\begin{itemize}[leftmargin=2em]
+    \item 如果设备有限或想优先验证思路，可以先用 Gated Attention。
+    \item 如果发现类内仍旧很散，考虑切换或加入 Slot+Cross。
+\end{itemize}
+
+\section{调参/排障套路}
+\subsection*{7.1 常调参数}
+\begin{itemize}[leftmargin=2em]
+    \item \texttt{attention\_loss\_scale}：直接影响正则力度；训练稳定后可慢慢调大。
+    \item \texttt{var\_threshold}：阈值大，惩罚少；阈值小，惩罚多。
+    \item \texttt{eps}：如果 log 里还是出现 NaN，可以适当增大。
+\end{itemize}
+
+\subsection*{7.2 日志里要看什么？}
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{rob\_loss 曲线}：应该随着训练逐渐稳定，不建议直接拉到很大。
+    \item \textbf{intra\_mse}：如果一直不降，说明注意力权重没抓对关键样本。
+    \item \textbf{注意力权重分布}：可以打印权重直方图，看看是否过于平均或过于集中。
+\end{itemize}
+
+\section{常见问题速查}
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{Q：权重会不会全都平均？}\\
+    A：初始可能接近平均，但随着训练，$W_V$、$W_U$ 会把关键样本权重大幅拉升。
+    \item \textbf{Q：阈值怎么选？}\\
+    A：默认值通常够用，如果你希望正则更激进，可以把 \texttt{var\_threshold} 调小一些。
+    \item \textbf{Q：怎么知道正则有没有帮到隐私？}\\
+    A：除了看 rob\_loss，还可以在攻击测试里比较是否更难重构。同时关注主任务准确率，避免过正则。
+\end{itemize}
+
+\section{下一步可以做什么？}
+\begin{itemize}[leftmargin=2em]
+    \item 结合同目录下的流程图（PDF/PNG），向同事展示每一步的输入输出。
+    \item 记录每个 epoch 的 rob\_loss、intra\_mse、准确率，做一张曲线图观察趋势。
+    \item 如果需要进一步解释，可以把注意力权重打印成热力图，让团队直观看到“谁最重要”。
+\end{itemize}
+
+\end{CJK*}
+\end{document}
+
+\end{CJK*}
+\end{document}

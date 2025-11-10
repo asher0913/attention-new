@@ -1,0 +1,9 @@
+\contentsline {section}{\numberline {1}一张图先感知：我们在解决什么？}{2}{section.1}%
+\contentsline {section}{\numberline {2}整体故事：像是给班级点名}{2}{section.2}%
+\contentsline {section}{\numberline {3}组件 1：GatedAttentionPooling（谁是关键样本？）}{2}{section.3}%
+\contentsline {section}{\numberline {4}组件 2：GatedAttentionCEM（用权重来判定是否“稳”）}{3}{section.4}%
+\contentsline {section}{\numberline {5}训练循环里怎么接入？}{3}{section.5}%
+\contentsline {section}{\numberline {6}Slot+Cross vs. Gated Attention：该用谁？}{4}{section.6}%
+\contentsline {section}{\numberline {7}调参/排障套路}{4}{section.7}%
+\contentsline {section}{\numberline {8}常见问题速查}{5}{section.8}%
+\contentsline {section}{\numberline {9}下一步可以做什么？}{5}{section.9}%

@@ -1,0 +1,40 @@
+digraph GatedAttCEM {
+    graph [
+        rankdir=TB,
+        fontsize=12,
+        labelloc="t",
+        label="Gated Attention CEM 流程图",
+        pad="0.6",
+        nodesep="0.55",
+        ranksep="0.8"
+    ];
+    node [
+        shape=rectangle,
+        fontname="Helvetica",
+        fontsize=11,
+        style="filled,rounded",
+        fillcolor="#F8F9F9",
+        width=3.6
+    ];
+    edge [color="#4D5656", penwidth=1.3, arrowsize=0.85];
+
+    input [shape=parallelogram, fillcolor="#D6EAF8", label="输入批次\n• 特征 Z (B×D)\n• 标签 Y"];
+
+    group_stage [fillcolor="#E8F4FA", label="步骤 1：按标签分组\n• 对每个类别取出 X_c\n• 若 M ≤ 1 则跳过（无可靠统计）"];
+
+    norm_stage [fillcolor="#E8F4FA", label="步骤 2：LayerNorm\n• 归一化每个样本，消除尺度差异"];
+
+    att_stage [fillcolor="#FADBD8", label="步骤 3：Gated Attention Pooling\n1. V = tanh(W_V X_c)\n2. U = sigmoid(W_U X_c)\n3. logits = W_w (V ⊙ U)\n4. softmax → 权重 a"];
+
+    stats_stage [fillcolor="#E8DAEF", label="步骤 4：加权统计\n• 加权均值 μ_c = Σ a_m x_m\n• 加权方差 σ_c² = Σ a_m (x_m-μ_c)²\n• clamp 至最小 eps 防止 log(0)"];
+
+    threshold_stage [fillcolor="#FEF9E7", label="步骤 5：阈值判定\n• logσ_c² = log(σ_c² + γ)\n• σ_thr² = max(var_thr·reg², 1e-8) + γ\n• 仅保留超阈部分：ce_sur = ReLU(logσ_c² - logσ_thr²)"];
+
+    class_stage [fillcolor="#FEF9E7", label="步骤 6：类级汇总\n• L_c = mean(ce_sur)\n• MSE_c = mean‖x_m-μ_c‖² (监控)\n• w_c = M / B"];
+
+    outputs [shape=hexagon, fillcolor="#FDEBD0", label="步骤 7：累积输出\n• rob_loss += w_c · L_c\n• intra_mse += w_c · MSE_c\n• 最终除以权重和"];
+
+    train_stage [fillcolor="#FCF3CF", label="训练整合\n• rob_loss × attention_loss_scale\n• 先反向 rob_loss 再合并主任务梯度\n• NaN/Inf 自动置零，保持训练稳定"];
+
+    input -> group_stage -> norm_stage -> att_stage -> stats_stage -> threshold_stage -> class_stage -> outputs -> train_stage;
+}
