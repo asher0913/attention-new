@@ -1,0 +1,89 @@
+digraph SlotGatedCEMv2 {
+    graph [
+        rankdir=TB,
+        fontsize=12,
+        labelloc="t",
+        label="Slot + Gated Cross Attention CEM Pipeline (Technical v2)",
+        pad="0.35"
+    ];
+    node [
+        shape=rectangle,
+        fontname="Helvetica",
+        fontsize=11,
+        style=filled,
+        fillcolor="#F9FAFB",
+        width=3.3,
+        height=0.9
+    ];
+    edge [color="#4C4C4C", penwidth=1.4, arrowsize=0.85];
+
+    input [shape=parallelogram, fillcolor="#D9EDF7",
+           label="Mini-batch features Z ∈ ℝ^{B×D}\nClass labels Y"];
+
+    subgraph cluster_pre {
+        label="Stage 0 · Per-class tokenization";
+        fontsize=12;
+        style="rounded";
+        color="#AED6F1";
+        group_cls [label="Split by label c:\nX_c = {x_m | y_m = c},  m = 1..M"];
+        norm_kv [label="Normalize & project tokens:\nK_m=W_k·LN(x_m),  V_m=W_v·LN(x_m)", fillcolor="#E8F8F5"];
+        note_pre [shape=note, label="Assumption: each class processed independently → avoids cross-class leak"];
+    }
+
+    subgraph cluster_slot {
+        label="Stage 1 · Slot Attention (multi-modal aggregation)";
+        fontsize=12;
+        style="rounded";
+        color="#F5B7B1";
+        slot_init [label="Initialize slots s_k^{(0)} = μ + σ ⊙ ε,\n k = 1..S"];
+        slot_iter [label="Iterate t = 1..T:\nq_k = W_q·LN(s_k^{(t-1)})/√d\nα_{mk}=softmax_k(k_m^⊤ q_k / τ)\nu_k=Σ_m α_{mk} v_m\ns_k^{(t)} = GRU(u_k, s_k^{(t-1)}) + MLP", fillcolor="#FADBD8"];
+        slots_out [label="Slots S = {s_k^{(T)}} encode class-specific sub-modes", fillcolor="#FDEDEC"];
+        note_slot [shape=note, label="Plays the role of adaptive mixture components, replacing KMeans/GMM centers"];
+    }
+
+    subgraph cluster_cross {
+        label="Stage 2 · Gated Cross Attention (Flamingo-style)";
+        fontsize=12;
+        style="rounded";
+        color="#ABEBC6";
+        cross_prepare [label="Queries q_m = LN_q(x_m)\nKeys/Values = LN_kv(s_k)", fillcolor="#E8F8F5"];
+        cross_attn [label="α_m = softmax(q_m K^⊤ / √d)\nh_m = α_m V,\n o_m = W_o h_m", width=3.4];
+        cross_gate [label="y_m = x_m + tanh(α_attn)·o_m\ny_m = y_m + tanh(α_ffn)·FFN(LN_ff(y_m))", fillcolor="#D5F5E3"];
+        enhanced [label="Enhanced tokens \\tilde{x}_m = y_m", fillcolor="#E8F8F5"];
+        note_cross [shape=note, label="Gate parameters initialized near 0 → gradual activation, stable gradients"];
+    }
+
+    subgraph cluster_mix {
+        label="Stage 3 · Mixture-of-slots statistics + gating";
+        fontsize=12;
+        style="rounded";
+        color="#D2B4DE";
+        explain_stats [label="s_{ms}=⟨\\tilde{x}_m/||\\tilde{x}_m||,\n s_s/||s_s||⟩,\nr_{ms}=softmax_s(β·s_{ms}), w_s=Σ_m r_{ms}", width=3.6];
+        explain_mu [label="μ_s = (Σ_m r_{ms} \\tilde{x}_m)/w_s\nσ_s² = Σ_m r_{ms}(\\tilde{x}_m-μ_s)² / w_s"];
+        explain_gates [label="g_soft = sigmoid(MLP(LN(log σ_s²)))\ng_snr = sigmoid(κ (σ_s²/(μ_s²+ε) - τ_snr))\nφ_s = softplus(β'(log σ_s² - log θ) - m)/β'", width=3.7];
+        explain_score [label="\\tilde{w}_s = (w_s/M)^γ / Σ_j (w_j/M)^γ\nlogvar_d = Σ_s \\tilde{w}_s g_soft g_snr φ_s\nlogvar_c = sigmoid(a(M/B - b)) · mean_d(logvar_d)", fillcolor="#F5EEF8", width=3.6];
+        mse_monitor [label="MSE_c = (1/M) Σ_m ||\\tilde{x}_m - μ_c||² (monitor)", fillcolor="#F5EEF8"];
+        note_mix [shape=note, label="Stacked gating ensures only informative, high-uncertainty slots affect the surrogate"];
+    }
+
+    subgraph cluster_loss {
+        label="Stage 4 · CEM surrogate + training integration";
+        fontsize=12;
+        style="rounded";
+        color="#F8C471";
+        rob_loss [shape=hexagon, fillcolor="#FCF3CF",
+                  label="rob_loss = Σ_c p_c · max(0, logvar_c - log τ_glob)\np_c = M_c / B"];
+        scale_loss [label="Scale: rob_loss ← attention_loss_scale × rob_loss\n(default 0.25)", fillcolor="#FDEBD0"];
+        grad_cache [label="Backward rob_loss (retain_graph=True)\ncache encoder & attention gradients", fillcolor="#FDEBD0", width=3.7];
+        fuse [label="Zero optimizers → backward CE/other losses\n→ add λ·grad_rob to encoder\n→ restore attention grads", fillcolor="#FDEBD0", width=3.8];
+        note_loss [shape=note, label="Activation guards:\n• current_epoch > warmup (≈3)\n• λ > 0 and centers not random\n• Early shutoff if gate stats exceed thresholds"];
+    }
+
+    input -> group_cls -> norm_kv -> slot_init -> slot_iter -> slots_out -> cross_prepare -> cross_attn -> cross_gate -> enhanced -> explain_stats -> explain_mu -> explain_gates -> explain_score -> rob_loss -> scale_loss -> grad_cache -> fuse;
+    explain_score -> mse_monitor;
+    norm_kv -> note_pre;
+    slot_iter -> note_slot;
+    cross_gate -> note_cross;
+    explain_gates -> note_mix;
+    fuse -> note_loss;
+}

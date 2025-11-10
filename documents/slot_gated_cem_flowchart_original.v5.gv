@@ -1,0 +1,37 @@
+digraph SlotGatedCEMv5 {
+    graph [
+        rankdir=TB,
+        fontsize=11,
+        labelloc="t",
+        label="Slot + Gated Cross Attention CEM 全流程（纯文字叙述 v5）",
+        pad="0.45"
+    ];
+    node [
+        shape=rectangle,
+        fontname="Noto Sans CJK SC",
+        fontsize=10,
+        style=filled,
+        fillcolor="#FDFEFE",
+        width=4.6,
+        height=1.1
+    ];
+    edge [color="#4C4C4C", penwidth=1.2, arrowsize=0.8];
+
+    input [shape=parallelogram, fillcolor="#E3F2FD",
+           label="输入批次：客户端编码器输出的表征矩阵 Z 及其类别标签 Y。\n此处默认批次包含若干类别，每类样本数可能不均衡；\n源码会立即剔除尺寸过小的类别（M≤2）以保证后续统计可行。"];
+
+    preprocess [label="阶段 A：按类别重构序列。\n1）遍历 Y 中的唯一标签，对每个类别独立抽取特征集合 X_c。\n2）将 X_c reshape 为 [1,M,D] 的 token 序列，与 Slot Attention 的输入接口一致。\n3）对每个样本执行 LayerNorm 与线性映射，获得更稳定的键值表示；\n   这一步确保不同批次之间的数值尺度统一，避免门控统计受外部扰动。"];
+
+    slot_stage [label="阶段 B：Slot Attention 自适应提取类内子模式。\n源码中 slot_attention 模块由两组 LayerNorm、线性投影以及 GRU+MLP 叠加组成，\n能够在三轮迭代内通过“软竞争—聚合—更新”的循环为每个类别生成 S 个槽向量。\n直观理解：每个槽都尝试解释该类别特征中的某一潜在子结构，\n而 softmax 权重让样本可以在多个槽之间按相似度分配，因而比传统 KMeans 更柔性。\n迭代过程中采用 d^{-1/4} 的温度因子抑制注意力尖锐度，\n并使用 GRU 保持状态连续性，MLP 则提供非线性重整。"];
+
+    cross_stage [label="阶段 C：Flamingo 式门控交叉注意力提升样本表示。\nSlot Attention 得到的槽相当于“这一类的记忆库”，\n源码接着用 CrossAttention 模块让每个样本与所有槽进行多头交互：\n查询向量来自当前样本，键值来自槽，注意力输出再经过线性层映射回特征维度。\n为了控制训练节奏，作者在注意力残差和后续 FFN 残差上分别放置 tanh 门，\n其可学习参数初值设为 0.1，意味着新增信息会逐步引入而非一次性改变全部特征。\n最终得到的增强特征 \\tilde{x} 不仅含有原始样本信息，还编码了类内其他子模式的上下文。"];
+
+    stat_stage [label="阶段 D：对增强特征进行细粒度统计并施加门控约束。\n首先计算增强特征与每个槽之间的归一化相似度，再通过 temperature β 的 softmax 得到槽职责。\n源码接着统计每个槽接收到的总质量 w_s 以及其对应的均值和方差，\n这些量可以理解为“该子模式仍保留多少细节”。\n为了防止噪声维度或过度显著的槽主导梯度，作者设计了多级门控：\n维度门基于 log 方差的 LayerNorm+MLP 输出来衡量该维度是否可信；\nSNR 门检查方差与均值的比值，从而压制过度接近原输入的分量；\n另有 Softplus 型平滑阈值避免生硬的 ReLU；\n槽权重则按 (w_s/M)^γ 重新归一化，突出贡献度更高的槽。\n最后还乘上类级门，以 batch 中类别占比调节惩罚力度。"];
+
+    summary_stage [label="阶段 E：构建 rob_loss 并融入训练循环。\n所有经过门控汇总后的 log 方差被视作该类别“剩余细节”的度量，\n经过 ReLU+log threshold 处理后按类别占比加权求和，即得到 rob_loss。\n源码随后将其乘以 attention_loss_scale（默认 0.25），\n并执行一次 retain_graph=True 的 backward 以缓存编码器及注意力模块梯度。\n随后清零优化器，正常计算分类或重建损失，再把缓存梯度按 λ 叠加回编码器。\n这种“先缓存再融合”的做法保证了 CEM 梯度不会被随后的 backward 覆盖。\n此外还配备 warmup 与 Early shutoff：在前若干 epoch 或检测到 gate 统计异常时，\nrob_loss 会被强制置零但仍保持计算图连通，防止模型早期崩溃。"];
+
+    diagnostics [label="附加监控：源码还会记录类内 MSE、守卫触发次数、gate 均值等日志，\n用于观察 Slot+Cross 模块是否稳定。若检测到 NaN/Inf，则立即跳过该批次并归零 rob_loss。", shape=note, fillcolor="#F5F5F5"];
+
+    input -> preprocess -> slot_stage -> cross_stage -> stat_stage -> summary_stage;
+    summary_stage -> diagnostics;
+}

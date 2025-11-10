@@ -1,0 +1,89 @@
+digraph SlotGatedCEMv2 {
+    graph [
+        rankdir=TB,
+        fontsize=12,
+        labelloc="t",
+        label="Slot + Gated Cross Attention CEM Pipeline (Story Version)",
+        pad="0.35"
+    ];
+    node [
+        shape=rectangle,
+        fontname="Helvetica",
+        fontsize=11,
+        style=filled,
+        fillcolor="#F9FAFB",
+        width=3.1,
+        height=0.9
+    ];
+    edge [color="#4C4C4C", penwidth=1.4, arrowsize=0.85];
+
+    input [shape=parallelogram, fillcolor="#D9EDF7",
+           label="来自客户端的批次特征 Z\n（包含若干类别的样本）"];
+
+    subgraph cluster_pre {
+        label="步骤 1 · 先分组，准备讲故事";
+        fontsize=12;
+        style="rounded";
+        color="#AED6F1";
+        group_cls [label="按标签分成多个小场景\n例如：所有“飞机”样本放一起"];
+        norm_kv [label="对每个小场景做一次整理\n— LayerNorm\n— 简单线性映射，得到统一的输入格式", fillcolor="#E8F8F5"];
+        note_pre [shape=note, label="目的：让后面的注意力模块只关注单一类别，避免互相干扰"];
+    }
+
+    subgraph cluster_slot {
+        label="步骤 2 · Slot Attention：找到“多个小角色”";
+        fontsize=12;
+        style="rounded";
+        color="#F5B7B1";
+        slot_init [label="随机启动 S 个槽（slots）\n可以理解为“候选子模式”"];
+        slot_iter [label="多轮抢答：\n1. 每个样本对所有槽投票\n2. 槽收集加权信息并更新\n3. GRU+MLP 让槽更稳定", fillcolor="#FADBD8"];
+        slots_out [label="最终得到 S 个槽\n每个槽代表该类别中的一种样子", fillcolor="#FDEDEC"];
+        note_slot [shape=note, label="替代 GMM/KMeans 的硬聚类：\n槽是可学习的、可自适应的"];
+    }
+
+    subgraph cluster_cross {
+        label="步骤 3 · Gated Cross Attention：\n让样本和槽互相对话";
+        fontsize=12;
+        style="rounded";
+        color="#ABEBC6";
+        cross_prepare [label="把样本和槽都做 LayerNorm\n统一语气，防止谁太强势", fillcolor="#E8F8F5"];
+        cross_attn [label="多头交叉注意力：\n样本提问（Query），槽提供背景（Key/Value）"];
+        cross_gate [label="输出不是直接相加，而是有“门控”\nα_attn 和 α_ffn 让新增信息逐步加入\n→ 避免训练初期被扰动", fillcolor="#D5F5E3"];
+        enhanced [label="得到增强后的样本特征\n= 原特征 + 按门控调好的槽信息", fillcolor="#E8F8F5"];
+        note_cross [shape=note, label="想象成：每个样本把自己和“集合中的代表”做对比，\n看哪些细节必须保留、哪些可以模糊"];
+    }
+
+    subgraph cluster_mix {
+        label="步骤 4 · 统计 + 多重把关，衡量类内可辨识度";
+        fontsize=12;
+        style="rounded";
+        color="#D2B4DE";
+        explain_stats [label="对增强后的样本再看一眼：\n— 和每个槽的相似度\n— 统计每个槽收到多少样本（slot mass）"];
+        explain_mu [label="槽的平均特征 + 槽内部的波动\n→ 相当于“这个子模式还有多少细节”"];
+        explain_gates [label="多级门控逻辑：\n1) 每个维度的可靠性\n2) SNR 是否太像原图（泄露风险）\n3) 槽权重是否过低\n4) 类别样本太少时要放大容忍度", width=3.6];
+        explain_score [label="把所有门控后的结果加总，得到该类的“剩余细节分”\n分数越高，说明类内差异越大，应当继续压缩", fillcolor="#F5EEF8"];
+        mse_monitor [label="同时记录一个直观指标：\n类内 MSE（样本距离平均值）", fillcolor="#F5EEF8"];
+        note_mix [shape=note, label="这一步的心智模型：\n我们不再直接算数学方差，而是\n“看槽有多兴奋 + 我们是否允许它兴奋”。"];
+    }
+
+    subgraph cluster_loss {
+        label="步骤 5 · 生成 rob_loss 并回流训练";
+        fontsize=12;
+        style="rounded";
+        color="#F8C471";
+        rob_loss [shape=hexagon, fillcolor="#FCF3CF",
+                  label="所有类别的“剩余细节分”\n按各类在 batch 中的比例求平均 → rob_loss"];
+        scale_loss [label="乘一个调节系数（attention_loss_scale）\n通常 0.25，让它不会一下子拖垮主任务", fillcolor="#FDEBD0"];
+        grad_cache [label="把 rob_loss 反向传播，但先把\n编码器与注意力模块的梯度存起来\n（retain_graph=True）", fillcolor="#FDEBD0"];
+        fuse [label="清零 → 正常算分类/重建损失 →\n再把前面缓存的梯度按 λ 叠加回编码器\n注意力模块也恢复自己的梯度", fillcolor="#FDEBD0", width=3.6];
+        note_loss [shape=note, label="暖机 & 守卫：\n• 训练早期或随机初始化阶段不启用\n• 如果发现门控统计过高，rob_loss 直接置零\n  —— 防止瞬间把模型搞崩"];
+    }
+
+    input -> group_cls -> norm_kv -> slot_init -> slot_iter -> slots_out -> cross_prepare -> cross_attn -> cross_gate -> enhanced -> explain_stats -> explain_mu -> explain_gates -> explain_score -> rob_loss -> scale_loss -> grad_cache -> fuse;
+    explain_score -> mse_monitor;
+    norm_kv -> note_pre;
+    slot_iter -> note_slot;
+    cross_gate -> note_cross;
+    explain_gates -> note_mix;
+    fuse -> note_loss;
+}
