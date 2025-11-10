@@ -1,9 +1,0 @@
-\contentsline {section}{\numberline {1}先说结论：我们想解决什么问题？}{2}{section.1}%
-\contentsline {section}{\numberline {2}整体流程像是“班干部+分工”}{2}{section.2}%
-\contentsline {section}{\numberline {3}步骤 1：Slot Attention（挑队长）}{2}{section.3}%
-\contentsline {section}{\numberline {4}步骤 2：Gated Cross Attention（跟队长学习）}{3}{section.4}%
-\contentsline {section}{\numberline {5}步骤 3：混合槽统计 \& 条件熵判定}{4}{section.5}%
-\contentsline {section}{\numberline {6}训练里怎么用？}{5}{section.6}%
-\contentsline {section}{\numberline {7}调参和排障清单}{5}{section.7}%
-\contentsline {section}{\numberline {8}常见疑问速查}{6}{section.8}%
-\contentsline {section}{\numberline {9}你可以做的下一步}{6}{section.9}%
