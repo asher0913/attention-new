@@ -1,0 +1,133 @@
+\documentclass[12pt]{article}
+\usepackage{CJKutf8}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\geometry{a4paper, margin=1in}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=cyan
+}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{2em}
+
+\title{Slot + Gated Cross CEM 易懂手册（v6）}
+\author{自动生成}
+\date{\today}
+
+\begin{document}
+\begin{CJK*}{UTF8}{gbsn}
+\maketitle
+
+\begin{abstract}
+这份 v6 版手册对应根目录的 \texttt{SlotCrossAttentionCEM}，配套流程图 \texttt{slot\_gated\_cem\_flowchart\_original.v6.pdf}。我们保持原有流程（Slot Attention → Gated Cross Attention → 混合槽统计），但把解释方式改成“第一手就能看懂”的结构，方便直接拿去做 PPT 或讲稿。
+\end{abstract}
+
+\tableofcontents
+
+\section{一句话背景}
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{目标}：让同一类别的特征在中间层更紧凑，降低条件熵，减小被攻击者还原的风险。
+    \item \textbf{方法}：用“队长 + 向队长学习”来概括类内多样性，再用多重门控判定哪些方差值得惩罚。
+    \item \textbf{输出}：一个正则损失 \texttt{rob\_loss}（用于反向）和一个监控指标 \texttt{intra\_mse}。
+\end{itemize}
+
+\section{总览：四个阶段，像排班表}
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{阶段 1：Slot Attention 挑队长}\\
+    同类样本站成一排，多个 slots（队长）和大家多轮互动后，成为几个子簇代表。
+    \item \textbf{阶段 2：Gated Cross Attention 向队长取经}\\
+    每个样本根据注意力权重向队长借经验，门控残差确保逐步引入新信息。
+    \item \textbf{阶段 3：混合槽统计判断“是否稳”}\\
+    用余弦相似度分配责任，计算加权均值/方差，再通过维度门、SNR 门、Softplus 阈值和槽权重过滤噪声。
+    \item \textbf{阶段 4：类级聚合并输出损失}\\
+    对每类得到的结果乘以样本占比，合成为 \texttt{rob\_loss}；同时记录 \texttt{MSE} 曲线。
+\end{enumerate}
+
+\section{阶段细节}
+\subsection{1. Slot Attention（队长竞选）}
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{输入形状}：$[B=1, N=M, D]$，一次只处理某个类别的样本。
+    \item \textbf{流程}：
+    \begin{enumerate}[leftmargin=1.8em]
+        \item LayerNorm 后映射成 Key/Value。
+        \item slots 从可学习的高斯分布采样，避免完全一样。
+        \item 多轮循环：
+        \begin{itemize}
+            \item 用 slots 发出 Query，和样本 Key 点积 → softmax 责任。
+            \item 按责任加权 Value，得到更新量。
+            \item 用 GRU 和 MLP 更新 slots（保留记忆 + 引入新信息）。
+        \end{itemize}
+    \end{enumerate}
+    \item \textbf{额外细节}：点积除以 $(d)^{1/4}$ 防止梯度爆炸，LayerNorm 让不同 batch 可比。
+\end{itemize}
+
+\subsection{2. Gated Cross Attention（向队长取经）}
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{输入}：原样本特征 $x_m$ 和上一步的 slots。
+    \item \textbf{流程}：
+    \begin{enumerate}[leftmargin=1.8em]
+        \item 样本做 Query，slots 做 Key/Value。
+        \item 计算注意力后得到增强特征。
+        \item 通过 $\tanh(\alpha_{\text{xattn}})$ 门控残差加入原特征。
+        \item 再通过 Pre-LN + FFN + $\tanh(\alpha_{\text{ffn}})$ 的门控残差。
+    \end{enumerate}
+    \item \textbf{意义}：门控让模型一开始保持原状，训练稳定后再逐步依赖注意力。
+\end{itemize}
+
+\subsection{3. 混合槽统计（判断是否松散）}
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{责任分配}：增强后的样本与 slots 做余弦相似度，softmax 得到 $r_{mk}$。
+    \item \textbf{加权统计}：用 $r_{mk}$ 计算每个槽的加权均值 $\mu_s$、方差 $\sigma_s^2$。
+    \item \textbf{三种门控}：
+    \begin{itemize}
+        \item \textbf{维度软门}：LayerNorm + MLP + Sigmoid，抑制噪声维度。
+        \item \textbf{SNR 硬门}：$\sigma^2 / (\mu^2+\varepsilon)$，信噪比低的压低。
+        \item \textbf{Softplus 阈值}：对 $\log\sigma^2$ 做平滑阈值，避免 ReLU 的断点。
+    \end{itemize}
+    \item \textbf{槽权重}：根据 slot mass 调整权重，代表性强的槽更重要。
+    \item \textbf{类级聚合}：门控项相乘 → 按槽权重求和 → 对维度取平均，得到 $L_c$；再乘以类级 Sigmoid 门（batch 样本少则权重低）。
+\end{enumerate}
+
+\section{训练中的使用姿势}
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{触发条件}：$\lambda>0$、非随机中心、epoch 超过 \texttt{attention\_warmup\_epochs}。
+    \item \textbf{梯度流程}：
+    \begin{enumerate}[leftmargin=1.8em]
+        \item rob\_loss 先反向，保存编码器/注意力梯度。
+        \item 清梯度，再对交叉熵反向。
+        \item 按学习率缩放 \& $\lambda$ 加回 rob\_loss 的梯度。
+    \end{enumerate}
+    \item \textbf{保护机制}：早期关断、NaN/Inf 自动置零，确保不会把主任务拉崩。
+\end{itemize}
+
+\section{可调旋钮与排障}
+\subsection*{6.1 常用参数}
+\begin{itemize}[leftmargin=2em]
+    \item \texttt{num\_slots}：默认 8，可按类内复杂度调。
+    \item \texttt{num\_iterations}：默认 3，越大越精细但越慢。
+    \item \texttt{attention\_loss\_scale}：默认 0.25，控制正则强度。
+    \item \texttt{var\_threshold}：越小越严格，越大越宽松。
+\end{itemize}
+
+\subsection*{6.2 常见问题}
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{rob\_loss 一直是 0？}\\
+    可能还在 warmup，或门值触发了早期关断；看日志里的 \texttt{[CEM-GATE]} 提示。
+    \item \textbf{rob\_loss 过大导致精度掉}？\\
+    先减小 \texttt{attention\_loss\_scale}；也可以调大 \texttt{var\_threshold}。
+    \item \textbf{NaN/Inf}？\\
+    检查输入特征是否已有 NaN；或调大 Softplus 边际、eps。
+\end{itemize}
+
+\section{拿着这份文档做什么？}
+\begin{itemize}[leftmargin=2em]
+    \item 将本手册和 \texttt{slot\_gated\_cem\_flowchart\_original.v6.pdf} 一起做成 PPT。
+    \item 在组会上按“阶段概述 → 细节 → 调参”三段讲法分享。
+    \item 如需英文版或更技术化版本，可在此基础上补充数学公式。
+\end{itemize}
+
+\end{CJK*}
+\end{document}

@@ -1,0 +1,188 @@
+digraph SlotGatedCEMv6 {
+    graph [
+        rankdir=TB,
+        fontsize=12,
+        labelloc="t",
+        label="Slot + Gated Cross Attention CEM（与原报告一致）",
+        pad="0.5",
+        nodesep="0.5",
+        ranksep="0.9"
+    ];
+    node [
+        shape=rectangle,
+        fontname="Helvetica",
+        fontsize=11,
+        style="filled,rounded",
+        fillcolor="#F8F9F9",
+        width=4.2
+    ];
+    edge [color="#4D5656", penwidth=1.3, arrowsize=0.85];
+
+    input [shape=parallelogram, fillcolor="#D6EAF8",
+        label=<
+            <B>输入批次</B><BR ALIGN="LEFT"/>
+            特征张量 <I>Z</I>（来自割点） + 标签 <I>Y</I>
+        >];
+
+    subgraph cluster_pre {
+        label="预处理（报告 §2, §3.1）";
+        fontsize=12;
+        style="rounded";
+        color="#AED6F1";
+        group_class [label=<
+            <B>按标签划分</B><BR ALIGN="LEFT"/>
+            得到同类集合 <I>X</I><SUB>c</SUB><BR ALIGN="LEFT"/>
+            （每个 c 对应一行流程）
+        >, width=4.0]; 
+        tokens [label=<
+            <B>标准化并生成 Key/Value</B><BR ALIGN="LEFT"/>
+            LayerNorm(<I>X</I><SUB>c</SUB>) → <I>W</I><SUB>k</SUB>, <I>W</I><SUB>v</SUB><BR ALIGN="LEFT"/>
+            记 <I>k</I><SUB>n</SUB>, <I>v</I><SUB>n</SUB> （报告式 (1)）
+        >, fillcolor="#E8F8F5", width=4.4];
+    }
+
+    subgraph cluster_slot {
+        label="阶段 1：Slot Attention（§3.1）";
+        fontsize=12;
+        style="rounded";
+        color="#F5B7B1";
+        slot_init [label=<
+            <B>slots 初始化</B><BR ALIGN="LEFT"/>
+            可学习 <I>μ</I>, <I>σ</I> 产生 <I>s</I><SUB>k</SUB><SUP>(0)</SUP><BR ALIGN="LEFT"/>
+            （报告描述“可学习高斯”）
+        >, fillcolor="#FDEDEC", width=4.0];
+        slot_iter [label=<
+            <B>迭代更新（执行 T 次）</B><BR ALIGN="LEFT"/>
+            1) <I>q</I><SUB>k</SUB> = <I>W</I><SUB>q</SUB>·LN(<I>s</I><SUB>k</SUB>) / √<I>d</I><BR ALIGN="LEFT"/>
+            2) <I>a</I><SUB>nk</SUB> = softmax(<I>k</I><SUB>n</SUB><SUP>T</SUP><I>q</I><SUB>k</SUB>/τ)<BR ALIGN="LEFT"/>
+            3) <I>u</I><SUB>k</SUB> = Σ<sub>n</sub> <I>a</I><SUB>nk</SUB><I>v</I><SUB>n</SUB><BR ALIGN="LEFT"/>
+            4) <I>s</I><SUB>k</SUB> = GRU(<I>u</I><SUB>k</SUB>, <I>s</I><SUB>k</SUB>) + MLP
+        >, fillcolor="#FADBD8", width=4.6];
+        slots_out [label=<
+            得到更新后的 slots {<I>s</I><SUB>k</SUB>}，作为共享代表
+        >, fillcolor="#FDEDEC", width=4.0];
+    }
+
+    subgraph cluster_cross {
+        label="阶段 2：门控交叉注意力（§3.2）";
+        fontsize=12;
+        style="rounded";
+        color="#ABEBC6";
+        cross_norm [label=<
+            <B>准备 Q/K/V</B><BR ALIGN="LEFT"/>
+            样本：<I>q</I> = LN<sub>q</sub>(<I>x</I><SUB>m</SUB>)<BR ALIGN="LEFT"/>
+            slots：<I>K</I>, <I>V</I> = LN<sub>kv</sub>(<I>s</I>)
+        >, fillcolor="#E8F8F5", width=4.4];
+        cross_attn [label=<
+            <B>多头 cross-attn</B><BR ALIGN="LEFT"/>
+            <I>α</I> = softmax(<I>qK</I><SUP>T</SUP>/√<I>d</I>)<BR ALIGN="LEFT"/>
+            <I>h</I> = <I>αV</I>, <I>o</I> = <I>W</I><SUB>o</SUB><I>h</I>
+        >, fillcolor="#D5F5E3", width=4.4];
+        gated_res [label=<
+            <B>门控残差 + FFN</B><BR ALIGN="LEFT"/>
+            <I>y</I> = <I>x</I><SUB>m</SUB> + tanh(<I>α</I><SUB>xattn</SUB>)·<I>o</I><BR ALIGN="LEFT"/>
+            <I>y</I> = <I>y</I> + tanh(<I>α</I><SUB>ffn</SUB>)·FFN(LN(<I>y</I>))
+        >, fillcolor="#D5F5E3", width=4.6];
+        enhanced [label=<
+            输出增强特征 <I>\tilde{x}</I><SUB>m</SUB>
+        >, fillcolor="#E8F8F5"];
+    }
+
+    subgraph cluster_mix {
+        label="阶段 3：混合槽统计 + 门控（§3.3）";
+        fontsize=12;
+        style="rounded";
+        color="#D2B4DE";
+        cosine [label=<
+            <B>余弦相似度</B><BR ALIGN="LEFT"/>
+            <I>s</I><SUB>mk</SUB> = ⟨LN(\tilde{x}<SUB>m</SUB>), LN(<I>s</I><SUB>k</SUB>)⟩ / (‖·‖‖·‖)
+        >, width=4.6];
+        soft_assign [label=<
+            <B>soft assignment</B><BR ALIGN="LEFT"/>
+            <I>r</I><SUB>mk</SUB> = softmax<sub>k</sub>(β·<I>s</I><SUB>mk</SUB>)
+        >, width=4.2];
+        slot_mass [label=<
+            槽质量 <I>w</I><SUB>k</SUB> = Σ<sub>m</sub> <I>r</I><SUB>mk</SUB>
+        >, width=4.0];
+        slot_stats [label=<
+            <B>加权统计</B><BR ALIGN="LEFT"/>
+            <I>μ</I><SUB>k</SUB> = Σ<sub>m</sub> <I>r</I><SUB>mk</SUB> \tilde{x}<SUB>m</SUB> / <I>w</I><SUB>k</SUB><BR ALIGN="LEFT"/>
+            <I>σ</I><SUB>k,d</SUB><SUP>2</SUP> = Σ<sub>m</sub> <I>r</I><SUB>mk</SUB>(\tilde{x}<SUB>m,d</SUB> - <I>μ</I><SUB>k,d</SUB>)² / <I>w</I><SUB>k</SUB>
+        >, fillcolor="#F5EEF8", width=4.8];
+        gate_soft [label=<
+            <B>维度软门</B><BR ALIGN="LEFT"/>
+            LN(log <I>σ</I><SUP>2</SUP>) → MLP → Sigmoid = <I>g</I><SUB>k,d</SUB><SUP>(soft)</SUP>
+        >, fillcolor="#EBDEF0", width=4.8];
+        gate_snr [label=<
+            <B>SNR 硬门</B><BR ALIGN="LEFT"/>
+            SNR = <I>σ</I><SUP>2</SUP> / (<I>μ</I><SUP>2</SUP> + ε)<BR ALIGN="LEFT"/>
+            Sigmoid(α(SNR - τ)) = <I>g</I><SUB>k,d</SUB><SUP>(hard)</SUP>
+        >, fillcolor="#EBDEF0", width=4.8];
+        softplus [label=<
+            <B>Softplus 阈值</B><BR ALIGN="LEFT"/>
+            φ<sub>k,d</sub> = Softplus(β(log <I>σ</I><SUP>2</SUP> - log <I>σ</I><SUB>thr</SUB><SUP>2</SUP>) - margin)
+        >, fillcolor="#EBDEF0", width=4.8];
+        slot_weight [label=<
+            <B>槽权重</B><BR ALIGN="LEFT"/>
+            <I>\tilde{w}</I><SUB>k</SUB> = (<I>w</I><SUB>k</SUB>/<I>M</I>)<SUP>γ</SUP> / Σ(<I>w</I>/<I>M</I>)<SUP>γ</SUP>
+        >, fillcolor="#EBDEF0", width=4.4];
+        agg_slots [label=<
+            <B>聚合为槽级指标</B><BR ALIGN="LEFT"/>
+            Σ<sub>k</sub> <I>\tilde{w}</I><SUB>k</SUB> · <I>g</I><SUB>k,d</SUB><SUP>(soft)</SUP> · <I>g</I><SUB>k,d</SUB><SUP>(hard)</SUP> · φ<sub>k,d</sub>
+        >, fillcolor="#F5EEF8", width=4.8];
+        class_gate [label=<
+            <B>类级门</B><BR ALIGN="LEFT"/>
+            <I>g</I><SUB>c</SUB> = σ(<I>a</I>(<I>M</I>/<I>B</I> - <I>b</I>))
+        >, fillcolor="#F5EEF8", width=4.2];
+        rob_class [label=<
+            <B>类级输出</B><BR ALIGN="LEFT"/>
+            <I>L</I><SUB>c</SUB> = (1/<I>D</I>) Σ<sub>d</sub> Σ<sub>k</sub> <I>\tilde{w}</I><SUB>k</SUB> ψ<sub>k,d</sub><BR ALIGN="LEFT"/>
+            （报告式 (7)）
+        >, fillcolor="#E8DAEF", width=4.8];
+    }
+
+    subgraph cluster_loss {
+        label="阶段 4：损失 + 训练集成（§3.4, §4）";
+        fontsize=12;
+        style="rounded";
+        color="#F8C471";
+        rob_loss [shape=hexagon, fillcolor="#FCF3CF",
+            label=<
+                <B>rob_loss</B><BR ALIGN="LEFT"/>
+                Σ<sub>c</sub> <I>p</I><sub>c</sub> <I>g</I><sub>c</sub> <I>L</I><sub>c</sub><BR ALIGN="LEFT"/>
+                乘以 attention_loss_scale 后进入反向
+            >, width=4.6];
+        intra_mse [shape=rectangle, fillcolor="#FCF3CF",
+            label=<
+                <B>intra_mse</B><BR ALIGN="LEFT"/>
+                Σ<sub>c</sub> <I>p</I><sub>c</sub> · MSE<sub>c</sub><BR ALIGN="LEFT"/>
+                用于日志监控
+            >, width=4.2];
+        grad_flow [label=<
+            <B>训练整合</B><BR ALIGN="LEFT"/>
+            1) rob_loss 先反向，缓存编码器/注意力梯度<BR ALIGN="LEFT"/>
+            2) 清梯度，对交叉熵反向<BR ALIGN="LEFT"/>
+            3) 按学习率与 λ 缩放后加回编码器参数
+        >, fillcolor="#FDEBD0", width=4.8];
+        fuse_grad [label=<
+            <B>保护机制</B><BR ALIGN="LEFT"/>
+            早期关断 / NaN → rob_loss 置零<BR ALIGN="LEFT"/>
+            但计算图保持连通
+        >, fillcolor="#FDEBD0", width=4.4];
+    }
+
+    note_early [shape=note, fillcolor="#F4F6F7",
+        label="节点内容均对应报告 §3 公式；展示时按序讲即可"];
+
+    input -> group_class -> tokens -> slot_init -> slot_iter -> slots_out
+        -> cross_norm -> cross_attn -> gated_res -> enhanced -> cosine
+        -> soft_assign -> slot_mass -> slot_stats -> gate_soft -> gate_snr
+        -> softplus -> slot_weight -> agg_slots -> class_gate -> rob_class
+        -> rob_loss -> grad_flow -> fuse_grad;
+
+    slot_stats -> agg_slots [label="（维度平均前）"];
+    rob_loss -> intra_mse;
+    fuse_grad -> note_early;
+
+    enhanced -> slot_stats [style=dashed, label="提供 \\tilde{x}_m 用于统计"];
+}

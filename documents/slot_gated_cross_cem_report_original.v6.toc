@@ -1,0 +1,9 @@
+\contentsline {section}{\numberline {1}一句话背景}{1}{section.1}%
+\contentsline {section}{\numberline {2}总览：四个阶段，像排班表}{1}{section.2}%
+\contentsline {section}{\numberline {3}阶段细节}{2}{section.3}%
+\contentsline {subsection}{\numberline {3.1}1. Slot Attention（队长竞选）}{2}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}2. Gated Cross Attention（向队长取经）}{2}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}3. 混合槽统计（判断是否松散）}{2}{subsection.3.3}%
+\contentsline {section}{\numberline {4}训练中的使用姿势}{3}{section.4}%
+\contentsline {section}{\numberline {5}可调旋钮与排障}{3}{section.5}%
+\contentsline {section}{\numberline {6}拿着这份文档做什么？}{3}{section.6}%

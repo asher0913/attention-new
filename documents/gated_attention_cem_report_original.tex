@@ -1,0 +1,101 @@
+\documentclass[12pt]{article}
+\usepackage{CJKutf8}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\geometry{a4paper, margin=1in}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=cyan
+}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{2em}
+
+\title{Gated Attention 条件熵代理框架解析报告（Original）}
+\author{自动生成}
+\date{\today}
+
+\begin{document}
+\begin{CJK*}{UTF8}{gbsn}
+\maketitle
+
+\begin{abstract}
+本文面向 \texttt{gated-att/} 项目中的 \texttt{GatedAttentionCEM} 模块，系统梳理门控注意力替代 GMM/KMeans 的条件熵代理。内容包括目标动机、GatedAttentionPooling 的细节、加权统计与阈值化流程，以及在主训练循环中的集成方式。该版本保持原报告的数学表达，便于与流程图联动展示。
+\end{abstract}
+
+\tableofcontents
+
+\section{背景与动机}
+\subsection{条件熵最小化}
+类似 Slot+Cross 框架，这里希望压缩类内特征分布，使条件熵 $H(Z \mid Y)$ 降低，以削弱攻击者在割点上的重建能力。传统 GMM/KMeans 代理在高维/小批量情况下不稳定，因此采用门控注意力直接学习类内加权统计。
+
+\subsection{为什么用 Gated Attention}
+\begin{itemize}[leftmargin=2em]
+    \item 结构更轻：单层 gated attention 即可得到权重，不需要 slots 或多轮竞争，适合设备受限或想快速验证思路的场景。
+    \item 仍可学到“关键样本”：注意力权重会偏向代表性强的样本，用加权方差来衡量类内散度。
+    \item 直接替换 GMM：把 attention 权重理解为“软聚簇概率”，允许端到端训练。
+\end{itemize}
+
+\section{组件详解}
+\subsection{GatedAttentionPooling（§17--44 行）}
+\begin{enumerate}[leftmargin=2em]
+    \item 输入为同类样本矩阵 $X_c \in \mathbb{R}^{M \times D}$。
+    \item 通过两条支路：
+    \[
+        V = \tanh(W_V X_c), \qquad U = \sigma(W_U X_c),
+    \]
+    其中 $\tanh$ 捕捉方向，$\sigma$ 充当门控。
+    \item 两条支路逐元素相乘后映射到标量 logits：
+    \[
+        \ell = W_w (V \odot U) \in \mathbb{R}^{M \times 1}.
+    \]
+    \item 沿样本维度做 softmax 得到注意力权重 $a = \mathrm{softmax}(\ell)$，满足 $\sum_m a_m = 1$。
+\end{enumerate}
+权重 $a$ 中较大的样本被认为是类内关键信息，后续加权均值/方差都以此为系数。
+
+\subsection{GatedAttentionCEM（§46--118 行）}
+对每个类 $c$：
+\begin{enumerate}[leftmargin=2em]
+    \item LayerNorm：$\hat{X}_c = \mathrm{LayerNorm}(X_c)$，对齐尺度。
+    \item 通过 pooling 得到注意力 $a$。
+    \item 加权均值：
+    \[
+        \mu_c = \sum_m a_m \hat{x}_m.
+    \]
+    \item 加权方差：
+    \[
+        \sigma_c^2 = \sum_m a_m (\hat{x}_m - \mu_c)^2,
+    \]
+    并以 $\mathrm{eps}$ 下界避免 $\log 0$。
+    \item 阈值化 log-variance：
+    \[
+        \log\sigma_c^2 = \log(\sigma_c^2 + \gamma), \qquad
+        \mathrm{ce\_sur} = \max\bigl(0,\; \log\sigma_c^2 - \log\sigma^2_{\text{thr}}\bigr),
+    \]
+    其中 $\sigma^2_{\text{thr}} = \max(\texttt{var\_thr} \cdot \texttt{reg\_strength}^2, 10^{-8}) + \gamma$。
+    \item 类级输出 $L_c = \mathrm{mean}(\mathrm{ce\_sur})$，并记录 MSE 作为监控指标。
+    \item 按样本占比 $w_c = M / B$ 加权，加到总的 $rob\_loss$ 与 $intra\_mse$ 中。
+\end{enumerate}
+
+\section{训练循环中的集成}
+\begin{itemize}[leftmargin=2em]
+    \item 在 `train_target_step` 中，若满足 λ>0、epoch>warmup、非随机中心，就会调用 `GatedAttentionCEM` 计算 `rob_loss`（`model_training_paral_pruning.py:742-902`）。
+    \item 输出的 `rob_loss` 乘以 `attention_loss_scale` 并先反向保存梯度，再与主任务（交叉熵等）梯度合成。
+    \item NaN/Inf 的结果会清零，保证主干训练不被破坏。
+\end{itemize}
+
+\section{数值稳定性与调参}
+\begin{itemize}[leftmargin=2em]
+    \item \texttt{hidden\_dim}：注意力 MLP 的隐藏维度，自动取 $[64, 512]$。
+    \item \texttt{var\_threshold}, \texttt{reg\_strength}：决定 log-variance 阈值；阈值越大越宽松。
+    \item \texttt{attention\_loss\_scale}：控制正则梯度大小；训练稳定后可调大。
+    \item LayerNorm + $\mathrm{eps}$ 防止数值问题，类内样本不足时则跳过该类。
+\end{itemize}
+
+\section{结论}
+Gated Attention CEM 用单层 gated pooling + 阈值化 log-variance 的方式，替代 GMM/KMeans 作为类内条件熵 surrogate。结构轻量、易部署，适合在算力有限或类内单模态场景下优先使用。该报告与流程图（`gated_attention_cem_flowchart_original.v6.pdf`）配套，可直接用于展示。
+
+\end{CJK*}
+\end{document}
