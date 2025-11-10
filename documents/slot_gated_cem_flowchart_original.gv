@@ -1,0 +1,96 @@
+digraph SlotGatedCEM {
+    graph [
+        rankdir=TB,
+        fontsize=12,
+        labelloc="t",
+        label="Slot + Gated Cross Attention CEM Pipeline (Vertical)",
+        pad="0.4"
+    ];
+    node [
+        shape=rectangle,
+        fontname="Helvetica",
+        fontsize=11,
+        style=filled,
+        fillcolor="#F7F7F7",
+        width=2.6,
+        height=0.8
+    ];
+    edge [color="#4C4C4C", penwidth=1.5, arrowsize=0.8];
+
+    input [shape=parallelogram, fillcolor="#D9EDF7", label="Mini-batch features Z\nlabels Y"];
+
+    subgraph cluster_pre {
+        label="Preprocessing";
+        fontsize=12;
+        style="rounded";
+        color="#AED6F1";
+        group_class [label="按类分组\n(Group by label)", width=2.4]; 
+        tokens [label="构造 tokens: X_c ∈ ℝ^{M×D}\nLayerNorm + 线性 → K,V", fillcolor="#E8F8F5", width=3.0];
+    }
+
+    subgraph cluster_slot {
+        label="Slot Attention";
+        fontsize=12;
+        style="rounded";
+        color="#F5B7B1";
+        slot_init [label="Learned μ, σ → 采样 S 个 slots", fillcolor="#FDEDEC"];
+        slot_iter [label="多轮迭代 t=1..T:\n • Softmax(K·Q) with τ=d^{-1/4}\n • Weighted sum → updates\n • GRU(update, slot_prev)\n • MLP 残差修正", fillcolor="#FADBD8", width=3.2];
+        slots_out [label="输出 slots (S×D)", fillcolor="#FDEDEC"];
+    }
+
+    subgraph cluster_cross {
+        label="Gated Cross-Attention";
+        fontsize=12;
+        style="rounded";
+        color="#ABEBC6";
+        cross_norm [label="Query LN(x)\nKV LN(slots)", fillcolor="#E8F8F5"];
+        cross_attn [label="Multi-head cross-attn\nQ ← x, K/V ← slots", fillcolor="#D5F5E3"];
+        gated_res [label="tanh(α_attn)·AttnOut + Residual\nPre-LN FFN + tanh(α_ffn)", fillcolor="#D5F5E3", width=3.1];
+        enhanced [label="增强特征 \\tilde{x}_{c,m}", fillcolor="#E8F8F5", width=2.8];
+    }
+
+    subgraph cluster_mix {
+        label="Mixture-of-Slots Statistics";
+        fontsize=12;
+        style="rounded";
+        color="#D2B4DE";
+        cosine [label="归一化余弦相似 s_{m,s}", width=2.5];
+        soft_assign [label="Soft assignment r = softmax(β·s)"];
+        slot_mass [label="Slot mass w_s = Σ_m r_{m,s}"];
+        slot_stats [label="槽均值 μ_s, 方差 σ²_s", fillcolor="#F5EEF8"];
+        gate_soft [label="维度软门 g_soft\n= sigmoid(MLP(LN(log σ²)))", fillcolor="#EBDEF0"];
+        gate_snr [label="SNR 硬门 g_hard\n= sigmoid(α(SNR-τ))", fillcolor="#EBDEF0"];
+        softplus [label="Softplus margin\nφ = softplus(β(log σ² - θ) - m)", fillcolor="#EBDEF0"];
+        slot_weight [label="槽权重 \\tilde{w}_s ∝ (w_s/M)^γ", fillcolor="#EBDEF0"];
+        agg_slots [label="聚合: Σ_s \\tilde{w}_s g_soft g_hard φ", fillcolor="#F5EEF8", width=3.0];
+        class_gate [label="类级门 g_c = sigmoid(a(M/B - b))", fillcolor="#F5EEF8"];
+        rob_class [label="类级 logvar_c\n= g_c · mean_d(...)", fillcolor="#E8DAEF"];
+    }
+
+    subgraph cluster_loss {
+        label="CEM Loss Integration";
+        fontsize=12;
+        style="rounded";
+        color="#F8C471";
+        rob_loss [shape=hexagon, fillcolor="#FCF3CF", label="Robust loss rob_loss = Σ_c p_c · logvar_c", width=3.2];
+        intra_mse [shape=rectangle, fillcolor="#FCF3CF", label="监控: intra-class MSE"];
+        grad_flow [label="Backprop: rob_loss → encoder & attention\n保存梯度, 按 λ / LR 缩放", fillcolor="#FDEBD0", width=3.2];
+        fuse_grad [label="合并梯度 with CE loss\n(rob_loss.backward retain_graph)", fillcolor="#FDEBD0", width=3.2];
+    }
+
+    note_early [shape=note, fillcolor="#F4F6F7", label="Early shutoff: warmup / gate 过高 → rob_loss 置零\n保持计算图连通"];
+
+    input -> group_class -> tokens -> slot_init -> slot_iter -> slots_out -> cross_norm -> cross_attn -> gated_res -> enhanced -> cosine -> soft_assign -> slot_mass -> slot_stats -> agg_slots -> class_gate -> rob_class -> rob_loss -> grad_flow -> fuse_grad;
+
+    slot_stats -> gate_soft;
+    slot_stats -> gate_snr;
+    slot_stats -> softplus;
+    slot_mass -> slot_weight -> agg_slots;
+    gate_soft -> agg_slots;
+    gate_snr -> agg_slots;
+    softplus -> agg_slots;
+    rob_loss -> intra_mse;
+    fuse_grad -> note_early;
+
+    enhanced -> rob_class [style=dashed, label="MSE_c"];
+}
