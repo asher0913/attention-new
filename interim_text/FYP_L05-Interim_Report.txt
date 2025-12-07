@@ -1,0 +1,197 @@
+Interim Report
+COMP3050: Individual Dissertation (2025-2026)
+
+
+
+
+Matthew Pike
+
+
+
+
+                                                1
+Module Timeline
+
+
+   Deliverable                        Contribution      Due Date
+
+   Project Allocation Confirmation    Mandatory         08 Oct 2025 @ 15:00
+   Submit Project Proposal            2%                30 Oct 2025 @ 15:00
+   Preliminary Ethics Form            Mandatory         30 Oct 2025 @ 15:00
+   Full Ethics Form                   If required       20 Nov 2025 @ 15:00
+   Interim Report                     8%                16 Dec 2025 @ 15:00
+   Dissertation                       75%               28 Apr 2026 @ 15:00
+   Demonstration                      10%               05 May 2026 @ 15:00
+   Q&A Session                        5%                14 May 2026 @ 11:00 - 13:00
+
+                          Table 1: Outline of the FYP deliverables and deadlines
+
+
+
+                                                                                      2
+Interim Report
+Purpose of the Interim Report
+
+
+
+      • The Interim Report is a formal document that summarises the progress of your project to
+        date.
+      • It should be written and presented in a professional manner.
+           • There are no strict formatting requirements, but there are document templates available
+                under the “Resources” topic on Moodle.
+      • The suggested length of the report is 5,000 words.
+           • This is a suggested length only.
+           • The report should be written in a clear and concise manner.
+      • There are examples of good Interim Reports available on Moodle.
+           • These are provided as a guide only.
+           • Your report’s structure may vary depending on the nature of your project.
+
+
+
+                                                                                                       3
+Structure and Content
+
+
+      • Title Page:
+           • Should include: project title, author, affiliation, module code/name, supervisor, and date.
+      • Abstract.
+           • A brief summary of your project (generally, no more than 250 words).
+      • Table of Contents.
+      • Introduction.
+           • A brief overview of your project, its motivation, and main objectives.
+      • Literature Review.
+           • A fairly detailed review of the relevant literature and work related to your project.
+      • Methodology.
+           • An outline of your project’s current methodological approach.
+      • Implementation / Results.
+           • If there are any results to report (from preliminary experiments, etc.).
+
+                                                                                                           4
+Structure and Content (cont)
+
+
+
+      • Progress.
+           • A description of the completed work. Project management issues should also be discussed.
+           • A review of the original project plan should be included along with an updated plan for the
+             remainder of the project.
+                 • A Gantt chart is a useful way to present this information.
+
+      • Reflection.
+           • Issues that have arisen and how they have been addressed.
+           • What have you learned from completing the project so far?
+      • Bibliography.
+           • There is no strict format for the bibliography, but it should be consistent throughout the
+             report.
+                 • Ask your supervisor if they have a preferred format.
+
+
+
+                                                                                                           5
+Marking
+Rubric
+
+
+
+
+         • Your proposals will be marked according to a standardised rubric.
+              • Ensure you have a good understanding of this rubric.
+              • Review your proposal against this rubric before finalising your submission.
+         • The rubric is available via Moodle.
+              • Module Assessment → Interim Report (8%) → Interim Report Marking Rubric.
+
+
+
+
+                                                                                              6
+In-class Exercise - Understanding the Requirements (10 Mins)
+
+
+
+      Why are we doing this?
+
+         • This is a good way to get a feel for the requirements of the Interim Report.
+         • It is also a good way to get a feel for how your Interim Report will be marked.
+
+
+      • Organise yourselves into groups of 2-4.
+      • Open your laptops / tablet / phone.
+      • One person should have the rubric open on their device.
+      • Another person should have one example of a good Interim Report open on their device.
+      • Go through and annotate where/when the report does/not meet a criterion specified in
+        the rubric.
+
+
+                                                                                                7
+Example of Annotation
+
+
+
+
+                Figure 1: Example of annotations for the Interim Report rubric exercise.   8
+Frequently Asked Questions (FAQs)
+
+   Q: Can I write more than 5,000 words?
+       • Aim to write around 5,000 words; however, this is not a strict limit. Ensuring you are writing
+         in a clear and concise manner. If in doubt, ask your supervisor.
+   Q: Are there any formatting requirements?
+       • There are no strict formatting requirements, but document templates are available on
+         Moodle.
+   Q: Are there any filename requirements?
+       • No, there are no specific filename requirements. However, it is good practice to include
+         your student number in the filename.
+   Q: Can I include code in my report?
+       • Yes, you can include code in your report. Brief code snippets in the main body are
+        acceptable, but longer code sections should be included in an appendix.
+
+   Q: Do the cover page, table of contents, bibliography, and appendices count towards the word
+   count?
+      • No, the word count applies only to the main body of the report.                                   9
+Module Administration
+Best FYP Award
+
+
+      • Each year the School of Computer Science awards one “Best FYP Award” to the best FYP
+       project.
+      • The intention of this award is to recognise the best FYP project in the School and to
+       encourage students to produce high-quality work.
+      • The award is open to all students who have completed a FYP.
+      • Each supervisor is asked to nominate one student for the award.
+      • A panel of experienced academics will review the nominated projects and select the
+       winner.
+      • The panel will evaluate nominees on:
+           • Quality of the project.
+           • Impact of the work outside of the components assessed in the module.
+           • Novelty, creativity, and originality of the project.
+
+                                                                                                10
+Best FYP Award (cont)
+
+
+
+
+      • The winner will be announced publicly through the faculty’s publicity channels.
+      • A certificate and prize will be awarded.
+      • The achievement can be listed as “Best FYP Award Winner” on their CV.
+      • To celebrate, Dave Towey will buy them a drink at the end of the year.
+
+
+
+
+                                                                                          11
+Distinguished FYP Awards
+
+
+
+
+      • In addition to the “Best FYP Award”, the School of Computer Science also awards a number
+        of “Distinguished FYP Awards.”
+      • These awards are given to students who have produced a high-quality FYP project and who
+        have demonstrated a high level of professionalism throughout the project.
+      • The awards are open to all students who have completed a FYP.
+
+
+
+
+                                                                                                   12
+

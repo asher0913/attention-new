@@ -1,0 +1,131 @@
+                                                                           Very Poor                      Poor                  Less than adequate                 Adequate                       Good                       Very Good                    Excellent                Outstanding
+            Marking Criteria                     (Zero)
+                                                                             (F-2)                        (F-1)                        (III)                        (II-2)                        (II-1)                       (I-C)                        (I-B)                     (I-A)
+
+
+                                                                                                                                                   Aim(s) broadly describe(s)
+                                          No attempt to address                                                                                      the point of the project                                                   Aim(s) clearly describe(s)
+                                                                                           Aim(s) do(es) not fully describe
+           Aim(s) and Objectives           any objective/aim or                                                                                    and what will be achieved                 the point of the project and what will be achieved. All objectives are appropriate, detailing the
+C1                                                               the point of the project and what will be achieved. There are too many or too few
+                  (10%)                  aims and objectives are                                                                                      and all objectives are                               individual aspects which need to be achieved in order to deliver the
+                                                                                    objectives and some of them are appropriate.
+                                             not appropriate.                                                                                         appropriate, but a few                                                             aim(s).
+                                                                                                                                                     objectives are missing.
+
+
+                                                                                                                           Knowledge of the subject area is mostly relevant (but                                                          Knowledge of the subject area is fully relevant to
+                                                                     A limited knowledge of the subject area with no
+                                                                                                                             some could be irrelevant) to the project, with some  Knowledge of the subject area is fully relevant to the the project, with a full appreciation of context and
+                                                                  appreciation of context or motivation. Knowledge of
+       Breadth of knowledge on the                                                                                           appreciation of the context and motivation. There is project, with appreciation of context and motivation.    motivation. There is depth of knowledge of the
+                                          No knowledge of the      the topic is at a superficial level. E.g., very limited
+      subject area and knowledge of                                                                                              some knowledge of the topic and it has been      There is some knowledge of the topic which has been        topic, key work is identified and it has been
+C2                                       subject area and topic. and inappropriate review of similar previous work or
+      the chosen specific topic as the                                                                                       connected to the project up to a degree. E.g., good  well connected to the project. E.g., sound (literature) explicitly connected to the project. E.g., extensive
+                                         No motivation provided. literature review or inclusion of statements as word-
+           focus and motivation                                                                                            literature review of the immediate project background      review of the project area, with awareness of          (literature) review of the field and excellent
+                                                                    by-word proper quotations from sources (else is
+                  (10%)                                                                                                       with some good examples of research/(industrial)             research/applications and relevance.            awareness of research/(industrial) applications
+                                                                             plagiarism) with no value added.
+                                                                                                                                                 applications.                                                                                               and relevance.
+
+                                                                                                                             Lack of suitable references
+                                                                                                                                                           Suitable references are used in the text; The range of
+                                                                                                                                 in the text, suitable
+                                                                                                                                                            references is balanced showing variety of sources (as            A comprehensive range of references are included in the text
+                                                                                                                                 references from poor
+                                                                     No evidence of in-text citations or suitable references                               appropriate for the project - books/journals/web/data      (books/journals/conference papers/web/data sheets) as appropriate for the
+        Quality and usage of sources                                                                                           sources. References are
+                                            No references or          in the text; e.g., overuse of Wikipedia and internet                                    sheets); Majority of references are from reputable                   project; All references are from reputable sources.
+             (in-text citations)                                                                                              overall not used correctly
+C3                                        citations are used in      sites, although there are better alternatives in terms                                sources. In-text citations are used correctly to support        In-text-citations are consistently correctly used to support report
+     to support content/ development                                                                                          to support report content/
+                                                  text.                    of books/journals/conference papers, or an                                          report content/arguments, as appropriate for a           content/arguments, as appropriate for a computer science context. E.g.
+                of argument                                                                                                         arguments. E.g.
+                                                                         inappropriate overreliance on a single source.                                    computer science context, e.g. "Smith, 2015 says that      "Structures are great (Smith, 2015).". All sources in references are used in
+                   (10%)                                                                                                       inappropriate quoting of
+                                                                                                                                                           structures are great.". A few sources in the references                                       the text.
+                                                                                                                             references. Little use of in-
+                                                                                                                                                                           are not cited in the text.
+                                                                                                                                      text citation.
+
+                                                                                                                                                                              Methodologies (design /
+          Understanding of the
+                                                                                                                                                                                 techniques / tools /
+       (theoretical / experimental /
+                                                                                                                                                                             algorithms / technologies) All methodologies (design
+     analytical / numerical / software                                                                                                                                                                                                              All methodologies (design / techniques / tools /
+                                        No information about                                                              Methodologies (design / techniques / tools /          are well and logically     / techniques / tools /
+     development-based / research-                                                                                                                                                                                                                   algorithms / technologies) are relevant to the
+                                       methodologies (design                                                            algorithms / technologies) outlined are broadly       explained, can be easily algorithms / technologies)
+     based, etc.) methodologies (/                                  Methodologies (design / techniques / tools /                                                                                                                                      topic. The description of work should show a
+                                        / techniques / tools /                                                      relevant to the topic. Basic, but limited, demonstration followed. The description stated are relevant to the
+C4     design / techniques / tools /                           algorithms / technologies) used are stated with very                                                                                                                                  complete and thorough understanding of the
+                                             algorithms /                                                              of understanding of the conceptual (theoretical)/       of work should show a           topic. There are
+     algorithms / technologies, etc.)                            little explanation. No evidence of understanding.                                                                                                                                  conceptual and practical issues surrounding the
+                                          technologies) are                                                         practical (experimental)issues surrounding the project good understanding of the appropriate explanations
+        related to the project (e.g.,                                                                                                                                                                                                                  project topic. Complete explanations of all
+                                            provided at all.                                                                                  topic                           conceptual and practical       of most methods in
+     specification, design, synthesis,                                                                                                                                                                                                                     methods in relation to the project.
+                                                                                                                                                                               issues surrounding the       relation to the topic.
+                    etc.)
+                                                                                                                                                                                    project topic.
+                   (20%)
+
+
+      Extent of the justification of
+     the (theoretical / experimental /
+     analytical / numerical / software
+      development-based / research-                                 Justification of the (theoretical / experimental /     Method(s) (/design /
+                                                                                                                                                     Method(s) (/design / techniques / tools / algorithms /
+        based, etc.) methodologies                               analytical / numerical / software development-based        techniques / tools /                                                             Method(s) (/design / techniques / tools / algorithms / technologies, etc.) are
+                                                                                                                                                     technologies, etc.) are mostly consistent and justified
+C5     (/design / techniques / tools / Absence of justification.     / research-based, etc.) method(s) (/design /       algorithms / technologies,                                                           consistently well justified with supporting evidence derived from an explicit
+                                                                                                                                                       with reference to the literature / previous work. The
+      algorithms / technologies, etc.)                            techniques / tools / algorithms / technologies, etc.) etc.) are stated with some                                                                          evaluation of the literature / previous work.
+                                                                                                                                                      literature / previous work may be evaluated in parts.
+      considered/used for the project.                              may have been attempted but mostly irrelevant.      justification in some parts.
+         E.g. related to literature /
+     standard practices / performance
+     requirements / specification, etc.
+                    (20%)
+
+                                                                                                                                                                                                                                                                                + Reflection outlines
+                                         No reflection on original                                                                 Limited to factual     Good reflection on original workplan. E.g.. comments          Reflection to the original workplan takes into
+                                                                                                                                                                                                                                                                              risks and how the risks
+C6    Reflection on original workplan           workplan.                 Superficial reflection on original workplan.        statements in reflection on  made about plan, implementation, improvements,               account measurable outcomes. Comments on
+                                                                                                                                                                                                                                                                                 are mitigated and
+                  (10%)                                                                                                            original workplan.       mistakes, areas of delay and adjustments made.               learning to take forward to future planning.
+                                                                                                                                                                                                                                                                                     managed
+
+
+                                                                                                                                                               Evidence of regular
+                                                                                                                                                             progress made between
+                                                                                                                                                             meetings. Problems are
+                                                                                  Basic management of project time, resources and tasks.                                                                                                                Excellent management of project time and
+                                                                                                                                                            commonly self identified,      Evidence of good and consistent progress being
+                                                                             Some ability to apply basic knowledge i.e. already taught material.                                                                                                     resources. Progress is excellent/continual/well
+                                           Failure to manage                                                                                                  some ability shown in       applied over the project. Student (or group) often
+C7         Project management                                            Some ability to define/identify problems, little consideration of potential/                                                                                                 managed. Student (or group) always takes a
+                                         project time and tasks.                                                                                           consideration of potential/     takes a leading role in meetings. (For a G54GPP
+                  (15%)                                                   alternative solutions. (For a group project, role of each individual is not                                                                                              leading role in meetings. (For a group project, role
+                                                                                                                                                           alternative solutions. (For   project, role of each individual is clearly discussed.)
+                                                                                                          discussed.)                                                                                                                                    of each individual is clearly discussed.)
+                                                                                                                                                             a group project, role of
+                                                                                                                                                            each individual is clearly
+                                                                                                                                                                   discussed.)
+
+
+                                                                                                                                                              In the main, the length of the report is good, and
+                                                                                                                                                                                                                      Length had been excellently judged with minor amounts of excess or brevity
+                                         Unreadable report, e.g.                                                                                               there has been an attempt to logically order and
+                                                                       Report is unjustifiable in length either short or long, OR report is at the right                                                                 and report is structured to a good standard presenting the work using
+                                                 due to                                                                                                       structure the report which has been successful in
+C8        Technical writing skills                                      length, but structured poorly or difficult to follow due to typos/grammatical                                                                  technical language that is consistent in the entire report. 'There are no or
+                                           typos/grammatical                                                                                               parts. There are a small number of typos or technical
+                  (5%)                                                                             errors/etc. in some parts.                                                                                              very few typos in the document and the intended meaning is clear
+                                                 errors.                                                                                                    language may be lacking in some sections which do
+                                                                                                                                                                                                                                                       throughout.
+                                                                                                                                                                      not obscure meaning in the main.
+

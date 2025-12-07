@@ -1,0 +1,300 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage[hidelinks]{hyperref}
+\usepackage{cite}
+\usepackage{titlesec}
+\usepackage{pgfgantt}
+\usepackage{enumitem}
+\usepackage{float}
+% Chapter-style headings in article
+\titleformat{\section}{\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{1em}{}
+
+\begin{document}
+\thispagestyle{empty}
+
+\begin{center}
+
+
+
+% --- University Logo ---
+\includegraphics[width=0.5\textwidth]{nottingham-logo.png}
+
+\vspace{3cm}
+
+% --- Title ---
+\Large \textbf{Project Proposal:}\\[6pt]
+\Large \textbf{Investigation of Defense Mechanisms against Model Inversion Attacks}
+
+\vspace{2cm}
+\normalsize {Submitted \textbf{October, 2025}, in partial fulfillment of \\ the conditions for the award of the degree \bf{BSc Computer Science}.}\\
+% --- Student Info ---
+\vspace{1.5cm}
+\large
+\textbf{Yixuan ZHANG}\\[6pt]
+\vspace{0.5cm}
+\textbf{20513731}\\[6pt]
+\vspace{0.5cm}
+\textbf{hnyyz39@nottingham.edu.cn}
+
+\vspace{1cm}
+
+% --- Supervisor ---
+\textbf{Supervised by Dr. Jianfeng REN}\\[1cm]
+\vspace{3cm}
+% --- Programme of Study ---
+\textit{BSc (Hons) Computer Science}\\[8pt]
+School of Computer Science\\University of Nottingham Ningbo China
+
+\vfill
+\end{center}
+\newpage
+% ----------------------------
+% Abstract
+% ----------------------------
+\begin{abstract}
+% 150--250 words.
+% 1) 1--2 sentences: background + why MIA matters in split/edge-cloud setting.
+% 2) 1 sentence: your aim.
+% 3) 2--3 sentences: what you have done so far:
+%    - Main: replaced GMM-based CEM surrogate with gated-attention CEM.
+%    - Result: improved performance under CIFAR-10 default settings.
+%    - Secondary: explored Slot + Gated Cross-Attention CEM variant.
+% 4) 1 sentence: key finding about (2) not outperforming baseline so far.
+% 5) 1 sentence: next steps: how you plan to fuse/position both ideas.
+\end{abstract}
+\newpage
+\tableofcontents
+\newpage
+
+% =========================================================
+\section{Introduction}
+% 目的：让评阅人快速知道你在解决什么、为什么值得做、你要怎么做。
+%
+% 建议小结构：
+% \subsection{Background and Motivation}
+% - Model inversion attack 简述（1段）。
+% - Edge-cloud / split learning 场景为什么更敏感（1段）。
+%
+% \subsection{Problem Statement}
+% - 明确你要防的是什么攻击、在哪个设置下评测。
+%
+% \subsection{Aim and Objectives}
+% - Aim 用 1 句清晰话。
+% - Objectives 用 4--6 条 bullet（可检验）。
+%   例：
+%   O1: Re-implement/understand CVPR Spotlight baseline CEM pipeline.
+%   O2: Design a gated-attention surrogate to replace GMM for conditional entropy loss.
+%   O3: Evaluate on CIFAR-10 with default protocol and compare to baseline.
+%   O4: Explore Slot + Gated Cross-Attention CEM extension.
+%   O5: Analyze failure modes and propose fusion strategies for next stage.
+
+\subsection{Background and Motivation}
+% TODO
+
+\subsection{Problem Statement}
+% TODO
+
+\subsection{Aim and Objectives}
+\textbf{Aim.} % TODO one sentence.
+
+\textbf{Objectives.}
+\begin{itemize}[leftmargin=1.5em]
+    \item % TODO O1    \item % TODO O2
+    \item % TODO O3
+    \item % TODO O4
+    \item % TODO O5
+\end{itemize}
+
+% =========================================================
+\section{Related Work}
+% 目标：展示你对领域“够懂”，并为你方法选择做铺垫。
+%
+% 建议按“主题”而不是“论文流水账”写：
+% \subsection{Model Inversion Attacks}
+% \subsection{Split Learning / Edge-Cloud Privacy}
+% \subsection{Conditional Entropy Minimization and Surrogates}
+% - 引出 baseline 用 GMM 的思路及其潜在问题（不可微/敏感/训练不稳等）。
+% \subsection{Gated Attention Mechanisms}
+% - 你的替代思路理论依据。
+% \subsection{Slot Attention and Cross-Attention}
+% - 说明你为什么认为它可能适合做更强的表征/聚类替代。
+
+\subsection{Model Inversion Attacks}
+% TODO
+
+\subsection{Split Learning / Edge-Cloud Privacy}
+% TODO
+
+\subsection{Conditional Entropy Minimization and Surrogates}
+% TODO
+
+\subsection{Gated Attention Mechanisms}
+% TODO
+
+\subsection{Slot Attention and Cross-Attention}
+% TODO
+
+% =========================================================
+\section{Methodology}
+% 这是 20%+20% 的核心拿分区：不仅讲“是什么”，还要讲“为什么这样选”。
+%
+% 强烈建议放 1 张总览图：
+% - baseline pipeline
+% - 你的 gated-attention 替换点
+% - 你的 slot+gated cross attention 分支（作为探索性路线）
+%
+% 建议结构：
+% \subsection{Baseline Overview (CVPR Spotlight)}
+% - 简述 baseline 架构与 GMM-based CEM loss 计算流程。
+%
+% \subsection{Proposed Method 1: Gated-Attention CEM}
+% - 讲清 attention pooling、类内加权均值/方差、log-variance 约束。
+% - 给出关键公式/伪代码。
+% - 说明优点：可微、稳定、无需聚类初始化。
+%
+% \subsection{Proposed Method 2: Slot + Gated Cross-Attention CEM (Exploratory)}
+% - 讲动机：期望更强结构化表征。
+% - 讲你目前实现的配置/假设。
+%
+% \subsection{Evaluation Protocol}
+% - 数据集、指标、默认训练脚本设置（此处只写原则，不必贴 shell）。
+% - 说明公平对比原则。
+
+\subsection{Baseline Overview (CVPR Spotlight)}
+% TODO
+
+\subsection{Proposed Method 1: Gated-Attention CEM}
+% TODO
+% You may add a short equation block here later.
+
+\subsection{Proposed Method 2: Slot + Gated Cross-Attention CEM (Exploratory)}
+% TODO
+
+\subsection{Evaluation Protocol}
+% TODO
+
+% =========================================================
+\section{Implementation}
+% 说明“你真的做了”。
+% 可写：
+% - 代码结构（模块级别）
+% - 关键工程决策
+% - 训练稳定性处理（warmup, loss scaling, gradient handling 等）
+%
+% 这部分可以简单，但要让评阅人看到可复现性意识。
+
+% TODO
+
+% =========================================================
+\section{Preliminary Results and Analysis}
+% 中期报告不求结果很大，但要“有证据、有对照、有解释”。
+%
+% 强烈建议一个主表：
+% Table: CIFAR-10 (default protocol)
+%   - Baseline (GMM surrogate)
+%   - Yours (Gated-Attention CEM)
+%   - Slot+Gated Cross-Attention (default setting)
+%
+% 再加 1 小节解释：
+% - 为什么 1 更好（从优化稳定性/可微性/类内方差控制角度）
+% - 为什么 2 目前不如 baseline（可能原因列表）
+%   例：slot 数/初始化、cross-attn 门控位置、loss 权重耦合、训练资源不足等
+% - 清晰声明：目前只在默认脚本上测试的范围边界。
+
+\subsection{Main Quantitative Comparison}
+% TODO: add a table later.
+
+\subsection{Why Method 1 Improves Over the Baseline}
+% TODO
+
+\subsection{Why Method 2 Underperforms So Far}
+% TODO: list hypotheses + supporting observations.
+
+% =========================================================
+\section{Progress Against Workplan}
+% 必写：原计划 vs 实际。
+% 你可以用：
+% - 一个小表格（Task / Planned / Achieved / Notes）
+% - 或 Gantt 图（更直观）
+%
+% 这里要写“可量化进展”。
+
+\subsection{Completed Work}
+\begin{itemize}[leftmargin=1.5em]
+    \item % TODO: Reproduced/understood baseline pipeline.
+    \item % TODO: Implemented gated-attention CEM surrogate.
+    \item % TODO: Ran CIFAR-10 default protocol and observed improvement.
+    \item % TODO: Implemented Slot + Gated Cross-Attention version (initial attempt).
+\end{itemize}
+
+\subsection{Original Plan vs Current Status}
+% TODO: add a small table.
+
+\subsection{Updated Plan}
+% TODO: bullet milestones for Jan--Apr.
+% Example milestones:
+% M1: Hyper-parameter sweep for Method 1 and 2.
+% M2: Fusion design (parallel/serial/shortcut).
+% M3: Expanded evaluation (more datasets/attacks).
+% M4: Ablations + write-up.
+
+% Optional Gantt placeholder
+% \begin{figure}[h]
+% \centering
+% \includegraphics[width=0.9\textwidth]{gantt_placeholder.png}
+% \caption{Updated Gantt chart for the remainder of the project.}
+% \end{figure}
+
+% =========================================================
+\section{Reflection and Risk Management}
+% 这是把“做项目的人味”写出来的地方，也是 rubric 高分点。
+%
+% 必写：
+% - 你遇到的真实问题
+% - 你怎么解决
+% - 你学到了什么
+% - 风险与缓解策略（最好 3--5 条）
+
+\subsection{Key Challenges So Far}
+\begin{itemize}[leftmargin=1.5em]
+    \item % TODO
+    \item % TODO
+\end{itemize}
+
+\subsection{What I Learned}
+% TODO
+
+\subsection{Risks and Mitigation}
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Risk:} % TODO
+          \textbf{Mitigation:} % TODO
+    \item \textbf{Risk:} % TODO
+          \textbf{Mitigation:} % TODO
+\end{itemize}
+
+% =========================================================
+\section{Conclusion}
+% 3--6 句即可：
+% - 重申 aim
+% - 总结目前最硬的结论：Method 1 works better under default CIFAR-10.
+% - Method 2 is promising but currently underperforms under default setting.
+% - 下一步明确聚焦“融合两者 + 更系统评测”。
+
+% TODO
+
+% =========================================================
+\bibliographystyle{plain}
+\bibliography{references}
+
+% If you don't want BibTeX yet, you can comment above and use manual references.
+
+% =========================================================
+\appendix
+\section{Additional Details}
+% 长代码/更多结果/更多图放这里。
+
+\end{document}
