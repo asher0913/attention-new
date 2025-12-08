@@ -22,3 +22,5 @@ CEM-main/
 !latex/**
 !documents/
 !documents/**
+!log/
+!log/**
