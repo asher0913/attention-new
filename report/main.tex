@@ -56,15 +56,7 @@ School of Computer Science\\University of Nottingham Ningbo China
 % Abstract
 % ----------------------------
 \begin{abstract}
-% 150--250 words.
-% 1) 1--2 sentences: background + why MIA matters in split/edge-cloud setting.
-% 2) 1 sentence: your aim.
-% 3) 2--3 sentences: what you have done so far:
-%    - Main: replaced GMM-based CEM surrogate with gated-attention CEM.
-%    - Result: improved performance under CIFAR-10 default settings.
-%    - Secondary: explored Slot + Gated Cross-Attention CEM variant.
-% 4) 1 sentence: key finding about (2) not outperforming baseline so far.
-% 5) 1 sentence: next steps: how you plan to fuse/position both ideas.
+Collaborative (edge–cloud) inference splits a network into an on-device encoder and a cloud decoder; the uploaded intermediate features are vulnerable to model inversion attacks (MIAs). Xia et al. \cite{cem} formalized a defense by maximizing a Gaussian-mixture lower bound of the conditional entropy $H(x \mid z)$, but fitting high-dimensional mixtures is computationally heavy and sensitive to non-Gaussian feature geometry. This project targets a learnable, distribution-agnostic surrogate of $H(x \mid z)$ that preserves task accuracy while increasing inversion error. To date: (1) the public CEM baseline has been reproduced under the default CIFAR-10 split (VGG11-BN-SGM, cutlayer=4, noise variance 0.025, $\lambda=16$); (2) a gated-attention conditional-entropy surrogate was designed, using class-wise gated pooling and variance-based log-entropy penalty, raising attack MSE from 0.0436 to 0.0473 and lowering SSIM from 0.432 to 0.411 with only a minor accuracy drop (85.18\% to 84.34\%); (3) an exploratory Slot + Gated Cross-Attention surrogate (slot aggregation plus Flamingo-style gated cross-attention) reached 85.04\% accuracy but degraded privacy (MSE 0.0393, SSIM 0.459). The current evidence favors gated attention as a stronger privacy–utility trade-off. The slot-based route likely needs architectural fusion (e.g., shortcut or parallel coupling with gated pooling) to stabilize variance estimates before it can surpass the baseline. Next steps focus on such fusion designs and hyperparameter sweeps to retain accuracy while further elevating inversion error.
 \end{abstract}
 \newpage
 \tableofcontents
@@ -72,41 +64,25 @@ School of Computer Science\\University of Nottingham Ningbo China
 
 % =========================================================
 \section{Introduction}
-% 目的：让评阅人快速知道你在解决什么、为什么值得做、你要怎么做。
-%
-% 建议小结构：
-% \subsection{Background and Motivation}
-% - Model inversion attack 简述（1段）。
-% - Edge-cloud / split learning 场景为什么更敏感（1段）。
-%
-% \subsection{Problem Statement}
-% - 明确你要防的是什么攻击、在哪个设置下评测。
-%
-% \subsection{Aim and Objectives}
-% - Aim 用 1 句清晰话。
-% - Objectives 用 4--6 条 bullet（可检验）。
-%   例：
-%   O1: Re-implement/understand CVPR Spotlight baseline CEM pipeline.
-%   O2: Design a gated-attention surrogate to replace GMM for conditional entropy loss.
-%   O3: Evaluate on CIFAR-10 with default protocol and compare to baseline.
-%   O4: Explore Slot + Gated Cross-Attention CEM extension.
-%   O5: Analyze failure modes and propose fusion strategies for next stage.
 
 \subsection{Background and Motivation}
-% TODO
+In collaborative (edge–cloud) inference, a lightweight encoder on the device produces an intermediate representation $z$ that is sent to a cloud-side decoder. This reduces on-device compute and bandwidth, but exposes $z$ to model inversion attacks (MIAs): adversaries with access to $z$ and the encoder can train decoders or generative models to reconstruct the private input $x$ \cite{fredrikson_mi,hitaj_gan_mi,nasr_whitebox,zhu_dlg,carlini_diffusion}. Prior obfuscation methods (noise injection, pruning, dropout, adversarial representation learning) improve privacy empirically \cite{noise_arl,patrol,distcorr,srivastava_dropout} but lack a principled link to worst-case inversion error.
+
+Xia et al. \cite{cem} introduced Conditional Entropy Maximization (CEM), showing that higher $H(x \mid z)$ lower-bounds the minimal reconstruction MSE. They operationalize $H(x \mid z)$ with a Gaussian Mixture Model (GMM) surrogate, but high-dimensional, non-Gaussian features make GMM fitting unstable, costly, and sensitive to initialization. This motivates a learnable, distribution-agnostic surrogate that can be optimized end-to-end with the split model.
 
 \subsection{Problem Statement}
-% TODO
+We seek a surrogate of conditional entropy that is (i) differentiable and stable on high-dimensional, non-Gaussian features; (ii) compatible with split inference constraints (encoder light, decoder heavy); and (iii) empirically improves the privacy–utility trade-off against strong MIA decoders on CIFAR-10 under a standard split protocol.
 
 \subsection{Aim and Objectives}
-\textbf{Aim.} % TODO one sentence.
+\textbf{Aim.} Develop and evaluate a learnable surrogate for conditional entropy that improves MIA robustness in split inference without materially degrading task accuracy.
 
 \textbf{Objectives.}
 \begin{itemize}[leftmargin=1.5em]
-    \item % TODO O1    \item % TODO O2
-    \item % TODO O3
-    \item % TODO O4
-    \item % TODO O5
+    \item Reproduce the CEM baseline \cite{cem} on CIFAR-10 with the public protocol (VGG11-BN-SGM, cutlayer=4, Gaussian noise).
+    \item Design a gated-attention surrogate that replaces GMM fitting with class-wise gated pooling and variance-based entropy penalties.
+    \item Explore a Slot + Gated Cross-Attention surrogate (slot aggregation plus gated cross-attention) as a richer, learnable mixture analogue.
+    \item Benchmark the two surrogates against the baseline using classification accuracy and inversion metrics (MSE, SSIM, PSNR) under a common threat model.
+    \item Analyze failure modes of the slot-based surrogate and propose fusion strategies (e.g., shortcut/parallel coupling) to stabilize variance estimation.
 \end{itemize}
 
 % =========================================================

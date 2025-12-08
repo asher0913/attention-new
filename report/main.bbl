@@ -1,3 +1,72 @@
-\begin{thebibliography}{}
+\begin{thebibliography}{10}
+
+\bibitem{carlini_diffusion}
+Nicholas Carlini, Jamie Hayes, Milad Nasr, Matthew Jagielski, Vikash Sehwag,
+  Florian Tramer, Borja Balle, Daphne Ippolito, and Eric Wallace.
+\newblock Extracting training data from diffusion models.
+\newblock In {\em 32nd USENIX Security Symposium (USENIX Security 23)}, pages
+  5253--5270. USENIX Association, 2023.
+
+\bibitem{patrol}
+Shiwei Ding, Lan Zhang, Miao Pan, and Xiaoyong Yuan.
+\newblock { PATROL: Privacy-Oriented Pruning for Collaborative Inference
+  Against Model Inversion Attacks }.
+\newblock In {\em 2024 IEEE/CVF Winter Conference on Applications of Computer
+  Vision (WACV)}, pages 4704--4713, Los Alamitos, CA, USA, January 2024. IEEE
+  Computer Society.
+
+\bibitem{fredrikson_mi}
+Matt Fredrikson, Somesh Jha, and Thomas Ristenpart.
+\newblock Model inversion attacks that exploit confidence information and basic
+  countermeasures.
+\newblock In {\em Proceedings of the 22nd ACM SIGSAC Conference on Computer and
+  Communications Security}, CCS '15, page 1322–1333, New York, NY, USA, 2015.
+  Association for Computing Machinery.
+
+\bibitem{hitaj_gan_mi}
+Briland Hitaj, Giuseppe Ateniese, and Fernando Perez-Cruz.
+\newblock Deep models under the gan: Information leakage from collaborative
+  deep learning.
+\newblock In {\em Proceedings of the 2017 ACM SIGSAC Conference on Computer and
+  Communications Security}, CCS '17, page 603–618, New York, NY, USA, 2017.
+  Association for Computing Machinery.
+
+\bibitem{noise_arl}
+Jonghu Jeong, Minyong Cho, Philipp Benz, and Tae-hoon Kim.
+\newblock Noisy adversarial representation learning for effective and efficient
+  image obfuscation.
+\newblock In {\em Proceedings of the Thirty-Ninth Conference on Uncertainty in
+  Artificial Intelligence}, UAI '23. JMLR.org, 2023.
+
+\bibitem{nasr_whitebox}
+Milad Nasr, Reza Shokri, and Amir Houmansadr.
+\newblock Comprehensive privacy analysis of deep learning: Passive and active
+  white-box inference attacks against centralized and federated learning.
+\newblock In {\em 2019 IEEE Symposium on Security and Privacy (SP)}, pages
+  739--753, 2019.
+
+\bibitem{srivastava_dropout}
+Nitish Srivastava, Geoffrey Hinton, Alex Krizhevsky, Ilya Sutskever, and Ruslan
+  Salakhutdinov.
+\newblock Dropout: a simple way to prevent neural networks from overfitting.
+\newblock {\em J. Mach. Learn. Res.}, 15(1):1929–1958, January 2014.
+
+\bibitem{distcorr}
+Praneeth Vepakomma, Abhishek Singh, Otkrist Gupta, and Ramesh Raskar.
+\newblock { NoPeek: Information leakage reduction to share activations in
+  distributed deep learning }.
+\newblock In {\em 2020 International Conference on Data Mining Workshops
+  (ICDMW)}, pages 933--942, Los Alamitos, CA, USA, November 2020. IEEE Computer
+  Society.
+
+\bibitem{cem}
+Song Xia, Yi~Yu, Wenhan Yang, Meiwen Ding, Zhuo Chen, Ling-Yu Duan, Alex~C.
+  Kot, and Xudong Jiang.
+\newblock Theoretical insights in model inversion robustness and conditional
+  entropy maximization for collaborative inference systems, 2025.
+
+\bibitem{zhu_dlg}
+Ligeng Zhu, Zhijian Liu, and Song Han.
+\newblock Deep leakage from gradients, 2019.
 
 \end{thebibliography}
