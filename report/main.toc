@@ -1,63 +1,63 @@
-\contentsline {section}{\numberline {1}Introduction}{5}{section.1}%
-\contentsline {subsection}{\numberline {1.1}Background and Motivation}{5}{subsection.1.1}%
-\contentsline {subsection}{\numberline {1.2}Problem Statement}{6}{subsection.1.2}%
-\contentsline {subsection}{\numberline {1.3}Aim and Objectives}{6}{subsection.1.3}%
-\contentsline {section}{\numberline {2}Related Work}{6}{section.2}%
-\contentsline {subsection}{\numberline {2.1}Model Inversion Attacks}{6}{subsection.2.1}%
-\contentsline {subsection}{\numberline {2.2}Split Learning / Edge-Cloud Privacy}{7}{subsection.2.2}%
-\contentsline {subsection}{\numberline {2.3}Conditional Entropy Maximization and Surrogates}{7}{subsection.2.3}%
-\contentsline {subsection}{\numberline {2.4}Attention and Self-Attention Foundations}{8}{subsection.2.4}%
-\contentsline {subsection}{\numberline {2.5}Gated Attention Mechanisms}{8}{subsection.2.5}%
-\contentsline {subsection}{\numberline {2.6}Slot Attention}{8}{subsection.2.6}%
-\contentsline {subsection}{\numberline {2.7}Cross-Attention and Gated Cross-Attention}{9}{subsection.2.7}%
-\contentsline {section}{\numberline {3}Methodology}{9}{section.3}%
-\contentsline {subsection}{\numberline {3.1}Baseline Overview}{9}{subsection.3.1}%
-\contentsline {subsection}{\numberline {3.2}Proposed Method 1: Gated-Attention CEM}{9}{subsection.3.2}%
-\contentsline {paragraph}{Design principles.}{9}{subsection.3.2}%
-\contentsline {paragraph}{Expected behaviour and trade-offs.}{10}{subsection.3.2}%
-\contentsline {paragraph}{Failure modes and tuning levers.}{10}{subsection.3.2}%
-\contentsline {subsection}{\numberline {3.3}Proposed Method 2: Slot + Gated Cross-Attention CEM }{10}{subsection.3.3}%
-\contentsline {paragraph}{Motivation and expectations.}{10}{subsection.3.3}%
-\contentsline {paragraph}{Practical challenges.}{10}{subsection.3.3}%
-\contentsline {paragraph}{Failure analysis and levers.}{11}{subsection.3.3}%
-\contentsline {subsection}{\numberline {3.4}Evaluation Protocol}{11}{subsection.3.4}%
-\contentsline {paragraph}{Fairness and scope.}{11}{subsection.3.4}%
-\contentsline {paragraph}{Ablation and reporting plan.}{11}{subsection.3.4}%
-\contentsline {paragraph}{Reproducibility and limits of current scope.}{11}{subsection.3.4}%
-\contentsline {section}{\numberline {4}Implementation}{12}{section.4}%
-\contentsline {subsection}{\numberline {4.1}Architecture and Threat Model}{12}{subsection.4.1}%
-\contentsline {subsection}{\numberline {4.2}Baseline Conditional-Entropy Surrogate}{12}{subsection.4.2}%
-\contentsline {subsection}{\numberline {4.3}Training Schedule and Optimization}{12}{subsection.4.3}%
-\contentsline {subsection}{\numberline {4.4}Design Criteria for the Surrogate}{13}{subsection.4.4}%
-\contentsline {subsection}{\numberline {4.5}Gated-Attention Surrogate}{13}{subsection.4.5}%
-\contentsline {paragraph}{Gated moment estimation.}{13}{subsection.4.5}%
-\contentsline {paragraph}{Entropy-shaped penalty.}{13}{equation.2}%
-\contentsline {paragraph}{Gradient injection order.}{14}{equation.3}%
-\contentsline {paragraph}{Why gated attention helps.}{14}{equation.3}%
-\contentsline {paragraph}{Pseudo-code and data flow (Gated-Attention).}{14}{equation.3}%
-\contentsline {subsection}{\numberline {4.6}Slot + Gated Cross-Attention Surrogate}{16}{subsection.4.6}%
-\contentsline {paragraph}{Slot inference as learned mixtures.}{16}{subsection.4.6}%
-\contentsline {paragraph}{Gated cross-attention refinement.}{16}{equation.4}%
-\contentsline {paragraph}{Dispersion and class penalty.}{16}{equation.5}%
-\contentsline {paragraph}{Default configuration and sensitivity.}{17}{equation.8}%
-\contentsline {paragraph}{Pseudo-code and data flow (Slot + Gated Cross-Attention).}{17}{equation.8}%
-\contentsline {subsection}{\numberline {4.7}Numerical Stability and Regularization}{19}{subsection.4.7}%
-\contentsline {subsection}{\numberline {4.8}Algorithmic Integration}{19}{subsection.4.8}%
-\contentsline {subsection}{\numberline {4.9}Computation and Memory Profile}{19}{subsection.4.9}%
-\contentsline {subsection}{\numberline {4.10}Hyperparameters and Planned Ablations}{19}{subsection.4.10}%
-\contentsline {subsection}{\numberline {4.11}Reproducibility Controls}{20}{subsection.4.11}%
-\contentsline {section}{\numberline {5}Experiments and Results Analysis}{20}{section.5}%
-\contentsline {subsection}{\numberline {5.1}Experimental Setup}{20}{subsection.5.1}%
-\contentsline {subsection}{\numberline {5.2}Overall Results}{21}{subsection.5.2}%
-\contentsline {subsection}{\numberline {5.3}Attack Training Dynamics}{21}{subsection.5.3}%
-\contentsline {subsection}{\numberline {5.4}Training Trajectory and Checkpoints}{22}{subsection.5.4}%
-\contentsline {subsection}{\numberline {5.5}Failure Analysis on Slot Branch}{22}{subsection.5.5}%
-\contentsline {subsection}{\numberline {5.6}Additional Visualizations}{22}{subsection.5.6}%
-\contentsline {subsection}{\numberline {5.7}Takeaways and Next Steps}{23}{subsection.5.7}%
-\contentsline {section}{\numberline {6}Challenges Reflection and Progress Management}{24}{section.6}%
-\contentsline {subsection}{\numberline {6.1}Progress Against Workplan}{24}{subsection.6.1}%
-\contentsline {paragraph}{Completed deliverables (with measurable outcomes).}{24}{subsection.6.1}%
-\contentsline {paragraph}{Planned milestones vs current status.}{24}{subsection.6.1}%
-\contentsline {subsection}{\numberline {6.2}Challenges, Risks, and Mitigation}{25}{subsection.6.2}%
-\contentsline {subsection}{\numberline {6.3}Next Steps}{26}{subsection.6.3}%
-\contentsline {section}{\numberline {7}Conclusion}{27}{section.7}%
+\contentsline {section}{\numberline {1}Introduction}{6}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Background and Motivation}{6}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Problem Statement}{7}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Aim and Objectives}{7}{subsection.1.3}%
+\contentsline {section}{\numberline {2}Related Work}{7}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Model Inversion Attacks}{7}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Split Learning / Edge-Cloud Privacy}{8}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Conditional Entropy Maximization and Surrogates}{8}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}Attention and Self-Attention Foundations}{9}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.5}Gated Attention Mechanisms}{9}{subsection.2.5}%
+\contentsline {subsection}{\numberline {2.6}Slot Attention}{9}{subsection.2.6}%
+\contentsline {subsection}{\numberline {2.7}Cross-Attention and Gated Cross-Attention}{10}{subsection.2.7}%
+\contentsline {section}{\numberline {3}Methodology}{10}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Baseline Overview}{10}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Proposed Method 1: Gated-Attention CEM}{10}{subsection.3.2}%
+\contentsline {paragraph}{Design principles.}{10}{subsection.3.2}%
+\contentsline {paragraph}{Expected behaviour and trade-offs.}{11}{subsection.3.2}%
+\contentsline {paragraph}{Failure modes and tuning levers.}{11}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Proposed Method 2: Slot + Gated Cross-Attention CEM }{11}{subsection.3.3}%
+\contentsline {paragraph}{Motivation and expectations.}{11}{subsection.3.3}%
+\contentsline {paragraph}{Practical challenges.}{11}{subsection.3.3}%
+\contentsline {paragraph}{Failure analysis and levers.}{12}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Evaluation Protocol}{12}{subsection.3.4}%
+\contentsline {paragraph}{Fairness and scope.}{12}{subsection.3.4}%
+\contentsline {paragraph}{Ablation and reporting plan.}{12}{subsection.3.4}%
+\contentsline {paragraph}{Reproducibility and limits of current scope.}{12}{subsection.3.4}%
+\contentsline {section}{\numberline {4}Implementation}{13}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Architecture and Threat Model}{13}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Baseline Conditional-Entropy Surrogate}{13}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Training Schedule and Optimization}{13}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Design Criteria for the Surrogate}{14}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Gated-Attention Surrogate}{14}{subsection.4.5}%
+\contentsline {paragraph}{Gated moment estimation.}{14}{subsection.4.5}%
+\contentsline {paragraph}{Entropy-shaped penalty.}{14}{equation.2}%
+\contentsline {paragraph}{Gradient injection order.}{15}{equation.3}%
+\contentsline {paragraph}{Why gated attention helps.}{15}{equation.3}%
+\contentsline {paragraph}{Pseudo-code and data flow (Gated-Attention).}{15}{equation.3}%
+\contentsline {subsection}{\numberline {4.6}Slot + Gated Cross-Attention Surrogate}{17}{subsection.4.6}%
+\contentsline {paragraph}{Slot inference as learned mixtures.}{17}{subsection.4.6}%
+\contentsline {paragraph}{Gated cross-attention refinement.}{17}{equation.4}%
+\contentsline {paragraph}{Dispersion and class penalty.}{17}{equation.5}%
+\contentsline {paragraph}{Default configuration and sensitivity.}{18}{equation.8}%
+\contentsline {paragraph}{Pseudo-code and data flow (Slot + Gated Cross-Attention).}{18}{equation.8}%
+\contentsline {subsection}{\numberline {4.7}Numerical Stability and Regularization}{20}{subsection.4.7}%
+\contentsline {subsection}{\numberline {4.8}Algorithmic Integration}{20}{subsection.4.8}%
+\contentsline {subsection}{\numberline {4.9}Computation and Memory Profile}{20}{subsection.4.9}%
+\contentsline {subsection}{\numberline {4.10}Hyperparameters and Planned Ablations}{20}{subsection.4.10}%
+\contentsline {subsection}{\numberline {4.11}Reproducibility Controls}{21}{subsection.4.11}%
+\contentsline {section}{\numberline {5}Experiments and Results Analysis}{21}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Experimental Setup}{21}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Overall Results}{22}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Attack Training Dynamics}{23}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}Training Trajectory and Checkpoints}{23}{subsection.5.4}%
+\contentsline {subsection}{\numberline {5.5}Failure Analysis on Slot Branch}{24}{subsection.5.5}%
+\contentsline {subsection}{\numberline {5.6}Additional Visualizations}{25}{subsection.5.6}%
+\contentsline {subsection}{\numberline {5.7}Takeaways and Next Steps}{26}{subsection.5.7}%
+\contentsline {section}{\numberline {6}Challenges Reflection and Progress Management}{27}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Progress Against Workplan}{27}{subsection.6.1}%
+\contentsline {paragraph}{Completed deliverables (with measurable outcomes).}{27}{subsection.6.1}%
+\contentsline {paragraph}{Planned milestones vs current status.}{27}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Challenges, Risks, and Mitigation}{29}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Next Steps}{30}{subsection.6.3}%
+\contentsline {section}{\numberline {7}Conclusion}{30}{section.7}%

@@ -1,0 +1,2667 @@
+Theoretical Insights in Model Inversion Robustness and Conditional Entropy
+Maximization for Collaborative Inference Systems
+
+{xias0002,yuyi0010,ding0159,eackot,exdjiang}@ntu.edu.sg, yangwh@pcl.ac.cn, lingyu@pku.edu.cn
+
+Encoder
+ℱ𝑒
+
+Ship
+
+Bird
+
+…
+
+Decoder
+ℱ𝑑
+
+Protected
+features
+
+…
+
+Decoder
+ℱ𝑑
+
+* Corresponding Author
+
+CEM
+Maximizing ξ
+
+Bird
+
+Ship
+
+Local Encoder
+
+Inputs
+
+Cloud Server
+MIAs
+𝒜
+
+Reconstruction
+
+…
+
+Deep neural networks (DNNs), trained on extensive datasets,
+have demonstrated outstanding performance across a growing spectrum of complex applications [23, 30, 42]. However,
+the increasing reliance on deploying these powerful mod-
+
+Unprotected
+features
+
+Preserving utility
+
+…
+
+1. Introduction
+
+Inputs
+
+…
+
+By locally encoding raw data into intermediate features,
+collaborative inference enables end users to leverage powerful deep learning models without exposure of sensitive
+raw data to cloud servers. However, recent studies have
+revealed that these intermediate features may not sufficiently
+preserve privacy, as information can be leaked and raw data
+can be reconstructed via model inversion attacks (MIAs).
+Obfuscation-based methods, such as noise corruption, adversarial representation learning, and information filters,
+enhance the inversion robustness by obfuscating the taskirrelevant redundancy empirically. However, methods for
+quantifying such redundancy remain elusive, and the explicit
+mathematical relation between this redundancy minimization and inversion robustness enhancement has not yet been
+established. To address that, this work first theoretically
+proves that the conditional entropy of inputs given intermediate features provides a guaranteed lower bound on the
+reconstruction mean square error (MSE) under any MIA.
+Then, we derive a differentiable and solvable measure for
+bounding this conditional entropy based on the Gaussian
+mixture estimation and propose a conditional entropy maximization (CEM) algorithm to enhance the inversion robustness. Experimental results on four datasets demonstrate the
+effectiveness and adaptability of our proposed CEM; without compromising feature utility and computing efficiency,
+plugging the proposed CEM into obfuscation-based defense
+mechanisms consistently boosts their inversion robustness,
+achieving average gains ranging from 12.9% to 48.2%. Code
+is available at https://github.com/xiasong0501/CEM.
+
+Encoder
+ℱ𝑒
+
+Abstract
+…
+
+arXiv:2503.00383v2 [cs.LG] 3 Apr 2025
+
+Song Xia1 , Yi Yu1 , Wenhan Yang2 *, Meiwen Ding1 , Zhuo Chen2 ,
+Ling-Yu Duan2,3 , Alex C. Kot1 , Xudong Jiang1
+1
+ROSE Lab, Nanyang Technological University, 2 Pengcheng Laboratory, 3 Peking University
+
+Stolen
+
+Unprotected
+Protected
+
+𝛏 Minimal MSE
+Protected Unprotected
+
+Inversion Adversary
+
+Backward training
+
+Figure 1. Privacy protection for collaborative inference via CEM.
+
+els on cloud platforms, such as ChatGPT-4 [2], introduces
+significant privacy and security concerns, as users may upload data containing sensitive information to cloud servers.
+Collaborative inference [49, 51, 53] offers a solution by partitioning the deep learning model across edge devices and
+cloud servers, where computations on the initial shallow layers are performed locally on the user’s device, and only the
+extracted intermediate features are transmitted to the cloud
+for subsequent processing. This allows end users to utilize
+powerful neural networks with minimal exposure of their raw
+inputs, and hence enhances data privacy. However, recent
+works [4, 5, 14, 15, 22, 25, 32, 40, 45, 48, 50, 60, 66, 69, 70]
+have revealed that those seemingly minor signals in these
+intermediate features still contain substantial sensitive information. As shown in Figure 1, the MIAs can steal those
+unprotected features to accurately reconstruct the raw inputs.
+Existing defense against MIAs can be broadly categorized into cryptography-based [24, 38, 43] and obfuscationbased methods [7, 11, 17, 20, 64]. Cryptography-based methods, such as homomorphic encryption [10, 21] and secure
+multi-party computation [38, 55], provide robust theoretical guarantees against MIAs by computing over encrypted
+data. However, the inherent computational overhead poses
+substantial challenges for their scalability on large-scale
+datasets [37]. Obfuscation-based defense aims to obfuscate the task-irrelevant redundancy by learning a privacypreserving feature encoder [3, 6, 19, 20, 28, 29, 36, 61].
+
+Those approaches primarily rely on empirical heuristics,
+such as assuming a proxy inversion adversary, to estimate task-irrelevant redundancy during encoder optimization.
+However, a rigorous quantification for evaluating such redundancy remains absent. Existing works [41, 62] have indicated that such empirical measure is not fully reliable, rendering it insufficient for fully exploring the inversion robustness
+of the trained feature encoder. Some methods [31, 37, 44, 57]
+employ information-theoretic frameworks to constrain the
+redundancy. However, none of them establishes a formal
+mathematical relationship between information redundancy
+and robustness against the worst-case inversion adversary,
+leaving a gap in fully understanding the interplay between
+redundancy minimization and robustness enhancement.
+This work aims to establish a systematic quantification
+approach to measure the task-irrelevant yet privacy-critical
+redundancy within the intermediate features. Furthermore,
+we endeavor to establish a theoretical relationship between
+the quantified redundancy and the worst-case model inversion robustness, thereby providing a tractable approach to
+enhance the inversion robustness of existing models against
+MIAs. We first demonstrate that the conditional entropy
+of the input x given intermediate feature z is strongly correlated with the information leakage, which guarantees a
+theoretical lower bound on the reconstruction MSE between
+the original and reconstructed inputs under any inversion
+adversary. Moreover, a differentiable and tractable measure
+is developed for bounding this conditional entropy based on
+Gaussian mixture estimation. Utilizing this differentiable
+measure, we propose a versatile conditional entropy maximization (CEM) algorithm that can be seamlessly plugged
+into existing empirical obfuscation-based methods, as shown
+in Figure 1, to consistently enhance their robustness against
+MIAs. The contributions of our work can be summarized as:
+• We make the first effort in establishing a theoretical relationship between the conditional entropy of inputs given
+intermediate features and the worst-case MIA robustness.
+Additionally, we derive a differentiable and tractable measure for quantifying this conditional entropy.
+• Building upon these theoretical insights, we propose a versatile CEM algorithm that can be seamlessly plugged into
+existing obfuscation defense to enhance its effectiveness
+in defending against MIAs.
+• We conduct extensive experiments across four datasets to
+empirically validate the effectiveness and adaptability of
+the proposed CEM algorithm. Our findings demonstrate
+that integrating CEM with existing obfuscation-based defenses consistently yields substantial gains in inversion
+robustness, without sacrificing feature utility or incurring
+additional computational overhead.
+
+2. Related Work
+Model Inversion Attacks (MIAs). MIAs represent a serious privacy threat, wherein adversaries reconstruct users’
+
+private input data by exploiting the information in model
+parameters or the redundancy present in intermediate outputs. The inversion adversaries can leverage a generative model [40, 41, 56, 65, 67, 68], such as the generative adversarial network (GAN) [12], or a DNN-based decoder [29, 47, 63] to learn the underlying mapping between
+intermediate features and original inputs, thereby uncovering the hidden inversion patterns. MIAs can be executed
+under a variety of conditions. Early research on MIAs primarily focuses on the white-box setting where the adversary has full access to the models along with the training
+data [9, 16, 59, 68]. However, recent work indicated that
+only by accessing the intermediate features and with little
+prior knowledge of the data [11, 32, 33, 70], the adversary
+can launch strong MIAs.
+Obfuscation-based MIAs defense mechanisms. The
+obfuscation-based defense methods protect the input privacy by obfuscating the redundant information in the intermediate features. These methods typically adopt strategies
+such as perturbing network weights [1] or intermediate features [19, 36] via noise corruption, purifying intermediate
+features through frequency domain filtering [34, 35, 58]
+or sparse coding [6, 20], and training inversion-robust encoders via adversarial representation learning [3, 28, 29, 61].
+Those methods generally incur no extra computational overhead during inference, thus serving as a practical and efficient solution for protecting data privacy against MIAs.
+Although these approaches offer practical effectiveness in
+defending against MIAs, they primarily measure such redundancy by some empirical heuristics without rigorous
+quantification [29, 41, 62], leading to a sub-optimal trade-off
+between feature robustness and utility. Furthermore, a formal
+mathematical relationship between redundancy and inversion robustness has not been established, leaving a critical
+gap in comprehensively understanding the interplay between
+redundancy minimization and robustness enhancement.
+
+3. Methodology
+3.1. Preliminaries
+Inversion threats on collaborative inference systems: We
+consider MIAs on collaborative inference systems, where
+deep learning models are split into a lightweight encoder Fe
+deployed locally and a decoder Fd deployed in the cloud.
+The end-users first encode their raw input x into the intermediate features z = Fe (x) locally, and then upload them to
+the cloud for prediction. This process is known to be susceptible to MIAs, as the intermediate features z is considered
+as a direct representation of the input [8, 52].
+The attack model: We consider the scenarios where the
+inversion adversary A can steal those user-shared intermediate features z to reconstruct raw inputs. Such threats may
+arise from the presence of an untrustworthy cloud server or
+unauthorized access to data traffic during transmission. To
+evaluate the worst-case inversion robustness, we assume the
+
+adversary possesses white-box access to the feature encoder
+Fe and has full prior knowledge of the input data space X .
+The MIA process is formulated as x̂ = A(z, Fe , X ). This
+information inversion can be achieved by utilizing the DNNbased decoder [13, 29] or the generative models [40, 65, 68]
+to learn the potential mapping from z → x.
+
+3.2. Theoretical Insights on Worst-case Robustness
+Assume that the information leakage is quantified by the
+MSE between the original x and the reconstructed x̂, i.e.,
+2
+∥x̂ − x∥2 /d, where d is the input dimensionality.
+Proposition 1 (Minimal reconstruction MSE ξ). In the
+worst-case scenarios, where the adversary A(z, X , Fe ) precisely estimates the posterior probability P(x|z) based on
+the extensive data prior X and the white-box access to the
+feature encoder Fe , the expectation of the minimal reconstruction MSE ξ over the whole dataset satisfies that:
+
+
+ξ · d = EZ EX ∥x − E [x|z]∥22 |z = EZ [T r(Cov(x|z)] . (1)
+
+Cov(x|z) is the covariance matrix of x conditioned on z,
+and T r is the trace operator. Eq. 1 is established based on
+the fact that the minimized MSE is given by the expectation
+of the posterior probability of x given z.
+Theorem 1 (Lower bound on the minimal reconstruction
+MSE ξ). Let H(x|z) denote the conditional entropy of the
+input x given the intermediate feature z. The minimal re1
+construction MSE ξ is bounded by: ξ ≥ (2πe)
+exp( 2H(x|z)
+).
+d
+Theorem 1 provides a lower bound on the minimal reconstruction MSE ξ in terms of the conditional entropy H(x|z),
+which serves as a robust measure for the worst-case robustness against MIAs. The reconstruction MSE ξ and the conditional entropy are highly correlated. Physically, a higher
+H(x|z) means a more uncertain estimation of x given z,
+resulting in a larger estimated error ξ. Thus, indicated by
+Theorem 1, a straightforward way to enhance the inversion
+robustness is to maximize the H(x|z) during training. The
+proof of Theorem 1 is in the supplementary materials S.1.
+However, deriving a closed-form expression between z
+and x is exceedingly difficult due to the inherent intractability of neural networks, especially when applied to largescale datasets. This renders the direct calculation of H(x|z)
+computationally prohibitive, making its maximization via
+backpropagation to eliminate the information redundancy
+during training exceedingly intractable. To solve this, a differentiable and computationally efficient lower bound on the
+conditional entropy H(x|z) is introduced in the next section
+to facilitate its maximization during training.
+
+3.3. Differentiable Bound on Conditional Entropy
+Proposition 2 (The conditional entropy under uncertain
+encoding). Without loss of the generality, we consider that
+the encoding process x → z consists of two components:
+
+a deterministic mapping: x → ẑ and a stochastic process:
+z = ẑ + ε, where ε is a random noise. H(x|z) satisfies:
+H(x|z) = H(x) − H(z) + H(z|ẑ) = H(x) − I(z; ẑ). (2)
+
+Proposition 2 is derived based on the definition of joint entropy, where H(x|z) = H(x) + H(z|x) − H(z). The
+equation H(z|x) = H(z|ẑ) holds due to the causal dependency from x → ẑ → z and x → ẑ is deterministic. Since
+H(x) remains constant for a given data distribution, the
+primary challenge in maximizing the conditional entropy
+H(x|z) indicated by Eq. 2 reduces to deriving a tractable
+and differentiable measure for I(z; ẑ).
+Consider the scenario where the task has n discrete targets y = {y1 , ..., yn }. Following previous statements, we
+consider that the encoding process can be separated into a
+deterministic mapping: x → ẑ and a noise corruption process: z = ẑ + ε, where ε ∼ N (0, Σp ) is a Gaussian noise.
+We assume that the distribution of the encoded feature ẑ can
+be effectively estimated by a k-component Gaussian mixture
+Pk
+distribution denoted as ẑ ∼
+i=1 πi N (µi , Σi ), leveraging the proven capability of Gaussian mixtures to closely
+approximate complex natural data distributions [46].
+Theorem 2 (Differentiable lower bound on H(x|z)).
+Given ẑ follows the Gaussian mixture distribution and ε
+is a Gaussian noise. The encoded feature z = ẑ + ε
+also follows a Gaussian mixture distribution with z ∼
+P
+k
+i=1 πi N (µi , Σi + Σp ). Consequently, the conditional
+entropy H(x|z) is bounded by:
+
+
+
+k
+X
+|Σi +Σp |
+1
+H(x|z) ≥ H(x)− πi −log(πi )+ log
+. (3)
+2
+|Σp |
+i=1
+
+Theorem 2 offers an effective and efficient way to bound the
+conditional entropy H(x|z), as the parameters πi and Σi are
+all tractable and differentiable with respect to ẑ. Given the
+extracted ẑ after deterministic mapping and the Gaussian
+noise ε, one can easily derive the parameters πi and Σi using
+a Gaussian mixture model. This facilitates the maximization of H(x|z) via gradient backpropagation utilizing Eq. 3,
+thereby improving the worst-case inversion robustness of the
+trained model. The proof of the Theorem 2 can be found in
+the supplementary material S.2.
+
+3.4. Practical Insights on the Utility and Robustness
+Trade-off
+Feature utility: Building on the previous discussion, the
+encoded feature
+Pk z follows a Gaussian mixture distribution
+with z ∼ i=1 πi N (µi , Σi + Σp ). In general, we assume
+that each Gaussian component or cluster belongs to one
+specific target. Ideally, we have k = n to accomplish the task.
+Due to the causal dependency from x → ẑ → z, the utility
+of the intermediate feature z is intrinsically linked to its
+correlation with preceding states. Thereby, the utility of z is
+positively correlated with the expected posterior probability
+that ẑ belonging to its original cluster j given z, which is:
+
+Encoded feature
+distribution
+
+Noised feature
+distribution
+
+Forward process
+
+Gaussian mixture
+components
+
+Backward process
+Feature visualization
+GMM parameterization
+
+𝒄𝟐
+
++
+
+𝑍
+
+𝜀~𝑁(0, Σ𝑝 )
+Image dataset
+
+GMM
+estimation
+ℒ𝐷
+
+𝑘
+
+1
+ℒ𝐶 = ෍ 𝜋𝑖 −log 𝜋𝑖 + log
+2
+𝑖=1
+
+𝛴𝑖 + 𝛴𝑝
+𝛴𝑝
+
+{𝜋1 … 𝜋𝑘 }
+𝑢1 … 𝑢𝑘
+{Σ1 … Σ𝑘 }
+
+Logits
+
+𝑍መ
+
+Decoder
+ℱ𝑑
+
+…
+
+…
+
+Encoder
+ℱ𝑒
+
+𝒄𝟏
+
+Parameterize
+
+Existing
+defense
+methods ℳ
+
+Figure 2. The versatile conditional entropy maximization algorithm for collaborative learning systems with split encoder and decoder.
+#
+"
+πj N (z; µj , Σj + Σp )
+Algorithm 1 Conditional entropy maximization algorithm
+. (4)
+EZ [P((ẑ ∈ j|z))] = EZ Pk
+1: Input: local encoder Fe , cloud decoder Fd , image dataset D
+i=1 πi N (z; µi , Σi + Σp )
+of size N , training epochs m, conditional entropy loss LC with
+Combing Eq. 3 and Eq. 4, we can get that the utilweight factor λ, Gaussian noise ε, existing defense methods
+ity and robustness of the feature z are dependent on the
+M with loss LD , Gaussian mixture model GM M , number of
+mixture clusters k.
+EZ [P((ẑ = j|z))] and the I(z; ẑ) respectively. These two
+2: Initialize Fe , Fd
+items are empirically closely linked, leading to a trade-off
+3: for epoch from 1 to m do
+between utility and robustness. Additionally, the following
+4:
+z ← concatenate{Fe (x) + ε, ∀x ∈ D}
+practical insights can be derived:
+5:
+Estimate
+P the distribution of z as a k component Gaussian
+• Physical interpretation of µi and Σi : Physically, the
+mixture : kj=1 πj N (µj , Σj + Σp ) using GM M (z, k)
+mean µi generally captures dominant or representative
+6:
+for image batch (xi , yi ) in the dataset D do
+characteristics of a cluster, while the covariance reflects
+7:
+zi = Fe (xi ) + εi
+the degree of variability or noise within the cluster. Con8:
+yi′ = Fd (zi )
+sistent with this interpretation, our analysis reveals that µi
+9:
+Assign zi to the nearest cluster
+is crucial for evaluating the feature utility. In contrast, the
+10:
+for cluster j ← 1 to k do
+covariance Σi is closely linked to the task-irrelevant redun11:
+Update the weight πj by Eq. 5
+12:
+Update the covariance matrix by Eq. 6
+dancy in ẑ, which diminishes feature utility and increases
+susceptibility to MIAs.
+13:
+Calculate LD by M(xi , yi , zi , yi′ )
+14:
+Calculate LC by Eq. 7.
+• Impact of noise corruption on inversion robustness:
+15:
+Optimize minFe ,Fd (LD + λ ∗ LC )
+The noise corruption introduced by Σp perturbs both the
+16: Output: Trained encoder Fe and decoder Fd
+task-important and redundant information, thus balancing
+
+the trade-off between utility and robustness. When there
+is a distinctive difference between the dominant features,
+2
+such as mini̸=j ∥µi − µj ∥2 ≫ T r(Σp ) ≫ T r(Σi + Σj ),
+adding the noise greatly corrupts the redundancy while
+bringing a small influence on the utility.
+• Ideal situation: For the ideal situation, we have Σi =
+Σp = 0, k = n and, πi = P(yi ). Thereby, we can easily
+get EZ [P((ẑ = j|z))] = 1 and H(z) = H(y), indicating
+that the feature z contains only the necessary information
+for the task, without any redundancy.
+However, for a lightweight encoder deployed on edge devices, it is exceedingly challenging to diminish all redundancies while preserving only the essential features. An
+alternative approach for developing a robust feature encoder
+is to jointly optimize both the covariance matrices Σi and the
+distance between the µj among different clusters, leading
+2
+to mini̸=j ∥µi − µj ∥2 ≫ T r(Σp ) ≫ T r(Σi + Σj ). Thus,
+
+incorporating appropriate noise can effectively diminish the
+residual redundancies, achieving the maximization of the
+lower bound on H(x|z) while ensuring prediction accuracy.
+
+4. The Versatile Conditional Entropy Maximization Algorithm for Collaborative Inference
+Building upon the derived theoretical insights on the differentiable lower bound of the conditional entropy H(x|z) and
+the practical insights on the utility and robustness trade-off,
+this section introduces a versatile conditional entropy maximization (CEM) algorithm. The CEM algorithm is designed
+to enhance the robustness of existing obfuscation-based defense mechanisms against MIAs in collaborative inference
+systems. For a given defense mechanism, denoted as M, the
+proposed CEM algorithm begins by assessing its worst-case
+
+robustness. This is achieved through a Gaussian mixture
+estimation process on the feature z to determine the parameters µi and Σi . Subsequently, during each training batch,
+the algorithm maximizes the lower bound of H(x|z) specified in Theorem 2 to strengthen robustness against MIAs.
+The details of the proposed CEM algorithm are presented in
+Figure 2 and Algorithm 1.
+Key techniques: Let Fe denote the local feature encoder
+and Fd denote the decoder deployed in the cloud. By estimating the distribution of noisy representation z with a
+Pk
+k-component Gaussian mixture i=1 πi N (µi , Σi + Σp ),
+the lower bound of the conditional entropy H(x|z) can be
+derived based on Eq. 3, utilizing the covariance matrices
+Σi and the weights of the mixture components πi . Since
+both of them are differentiable and solvable to the feature
+representation z, this lower bound of the conditional entropy
+H(x|z) can be effectively maximized via the gradient backpropagation. As described in Algorithm 1, each training
+iteration begins by fitting the distribution of z with a Gaussian mixture model (GMM). This involves optimizing the
+component weights π, means µ, and covariance matrices Σ
+to minimize the estimation error. For each data batch, the
+extracted feature representations are assigned to the mixture
+component j corresponding to the nearest mean µj , with the
+mixture parameters updated accordingly. The component
+weights πj are updated by:
+πj =
+
+πj (N − Nbatch ) + nj
+,
+N
+
+(5)
+
+where N is the total length of the dataset and Nbatch is the
+batch size. nj is the number of feature representations that
+are assigned to the mixture component j. The covariance
+matrices are updated by:
+Σj =
+
+
+
+nj
+nj
+1−
+Σj +
+∆Σj ,
+πj N
+πj N
+
+(6)
+
+where ∆Σj is the calculated covariance based on newly
+assigned feature representations. The updated parameters
+are then utilized to compute the conditional entropy loss LC ,
+defined as:
+LC =
+
+k
+X
+i=j
+
+
+πj
+
+− log(πj ) +
+
+1
+log
+2
+
+
+
+|Σj + Σp |
+|Σp |
+
+
+.
+
+(7)
+
+This loss function is then utilized as an effective indicator of
+worst-case inversion robustness and is minimized through
+gradient-based optimization.
+The combination with other defense strategies: As
+shown in Figure 2, existing obfuscation-based defense methods, such as noise corruption [19, 52], adversarial representation learning [7, 29], and feature purification [6, 20, 54]
+are collectively denoted as M, and an auxiliary training
+loss LD is used to encapsulate their impact in the backward
+optimization process. For approaches that involve architectural modifications, such as introducing information filtering
+
+Figure 3. Reconstruction MSE Vs. H(x|z) on the CIFAR10.
+
+layers or adversarial reconstruction models, we adhere to
+their defined configurations to incorporate our method. The
+proposed CEM algorithm can be seamlessly plugged into
+other defense mechanisms by embedding Gaussian mixture
+estimation within the training process and optimizing the
+combined loss function:
+L = LD + λ ∗ L C ,
+
+(8)
+
+where λ is a weight factor to balance the optimization. The
+utilization of the proposed CEM algorithm allows for an
+effective evaluation of worst-case inversion robustness of
+the feature representation throughout training and further
+optimizes this robustness via gradient backward propagation.
+Conditional entropy H(x|z) and reconstruction MSE
+by MIAs in practical scenarios: Theorem 1 indicates an exponential relationship between the lower bound on minimal
+MSE ξ and the conditional entropy H(x|z). We thereby empirically evaluate this relationship on the CIFAR10 dataset
+by training multiple models with varying levels of measured
+H(x|z) and assessing their inversion robustness by assuming a proxy inversion adversary. Following the experimental
+setting in [29], we utilize a VGG11 model with the first 2
+convolutional layers as encoder Fe and the rest of layers
+as the decoder Fd . We fix the λ = 16 and train different
+models using different Gaussian noise with variance varying from 0.01 to 0.3, thus leading to varying H(x|z). The
+relative conditional entropy H(x|z) is calculated by Eq. 3
+(we use ’relative’ due to H(x) is constant and its calculation
+over the whole data space is intractable. So a proper value is
+selected to replace it). We report the average reconstruction
+MSE by training a DNN-based MIA decoder A(z, X , Fe )
+with the same architecture as [29] and allow its full access
+to the training data and encoder Fe . The analytic results are
+shown in Figure 3, revealing a strong exponential correlation
+between the H(x|z) and the MIA reconstruction MSE.
+
+5. Experimental Results
+5.1. Experimental Settings
+We investigate the inversion robustness of collaborative inference models implemented on three general object classifi-
+
+Table 1. Comparative results on CIFAR10 dataset: we present the
+prediction accuracy and reconstruction MSE of different defense
+methods using the VGG11 model before and after the integration
+with the proposed CEM algorithm. The last 2 rows report the
+average performance of all methods, comparing results with and
+without incorporating the CEM algorithm.
+Methods
+
+Acc.↑
+
+Dec.-based MSE [29]
+
+GAN-based MSE [68]
+
+Train↑
+
+Infer↑
+
+Train↑
+
+Infer↑
+
+No_defense
+
+91.86
+
+0.0013
+
+0.0014
+
+0.0014
+
+0.0016
+
+Bottleneck
+Bottleneck+CEM
+
+90.87
+90.69
+
+0.0036
+0.0054
+
+0.0041
+0.0058
+
+0.0039
+0.0076
+
+0.0045
+0.0080
+
+DistCorr [54]
+DistCorr+CEM
+
+89.52
+89.80
+
+0.0074
+0.0090
+
+0.0082
+0.0093
+
+0.0079
+0.0094
+
+0.0088
+0.0096
+
+Dropout [15]
+Dropout+CEM
+
+87.75
+87.53
+
+0.0098
+0.0129
+
+0.0104
+0.0134
+
+0.0099
+0.0132
+
+0.0111
+0.0142
+
+PATROL [7]
+PATROL+CEM
+
+89.58
+89.67
+
+0.0245
+0.0304
+
+0.0293
+0.0335
+
+0.0257
+0.0313
+
+0.0307
+0.0347
+
+ResSFL [29]
+ResSFL+CEM
+
+89.68
+90.11
+
+0.0146
+0.0201
+
+0.0240
+0.0251
+
+0.0158
+0.0229
+
+0.0243
+0.0273
+
+Noise_Nopeek [52]
+Noise_Nopeek+CEM
+
+87.19
+87.08
+
+0.0152
+0.0174
+
+0.0159
+0.0174
+
+0.0156
+0.0173
+
+0.0165
+0.0178
+
+Noise_ARL [19]
+Noise_ARL+CEM
+
+87.78
+87.62
+
+0.0290
+0.0330
+
+0.0336
+0.0355
+
+0.0304
+0.0341
+
+0.0342
+0.0363
+
+Average w/o CEM
+Average w/ CEM
+
+88.91
+88.92
+
+0.0148
+0.0183
+
+0.0179
+0.0200
+
+0.0156
+0.0194
+
+0.0185
+0.0211
+
+cation datasets: CIFAR-10 [26], CIFAR-100 [26], TinyImageNet [27], and a face recognition dataset FaceScrub [39].
+For the CIFAR-10, CIFAR-100, and FaceScrub datasets, we
+use the VGG11 as the basic model and for the TinyImageNet
+dataset, we use the ResNet-20 as the basic model.
+Collaborative inference system: To simulate the collaborative inference, we split the VGG11 model by allocating
+the first two convolutional layers as the local encoder and
+assigning the remaining layers as the cloud decoder. For
+the ResNet-20 model, the first four convolutional years are
+allocated as the local encoder, with the remaining blocks
+functioning as the cloud-based decoder. This partitioning
+yields a computational distribution where the encoder is responsible for approximately 10% of the total computation
+and the decoder handles the remaining 90%. Unless otherwise specified, we maintain the same partitioning scheme
+across all evaluated methods for a fair comparison. We utilize the Stochastic Gradient Descent (SGD) optimizer to
+jointly optimize both the encoder and decoder with an initial learning rate of 0.05 and an appropriate learning rate
+decay. The VGG11 model is trained over 240 epochs and
+the ResNet20 model is trained over 120 epochs.
+Obfuscation defense methods: The proposed CEM can
+be flexibly integrated into the model training process to
+enhance the worst-case inversion robustness by introducing an auxiliary Gaussian mixture estimation to maximize
+the conditional entropy. We evaluate the effectiveness of
+the proposed CEM in enhancing several existing defense
+methods, including the information pruning-based methods
+called DistCorr [54] and Dropout [15]; adversarial representation learning-based method called ResSFL [29] and
+
+PATROL [7]; and noise corruption-based method called
+Noise_Nopeek [52] and Noise_ARL [19]. As observed
+in [29], the integration of bottleneck layers substantially
+enhances inversion robustness. To ensure a fair and rigorous comparison, we incorporate a bottleneck layer with
+8 channels for both pre- and post-processing of extracted
+feature representations across all evaluated methods. For
+PATROL [7] that introduces additional layers within the encoder and maintains the inference efficiency through network
+pruning techniques, we adjust the pruning ratio to ensure the
+encoder in PATROL remains the same size as other methods.
+To analyze the effect of the proposed CEM algorithm, we
+evaluate the performance of all methods both before and
+after integrating them with the CEM algorithm. If not otherwise stated, we set hyperparameters λ = 16 and utilize
+the isotropic Gaussian noise ε with a standard deviation of
+0.025. We set the number of Gaussian mixture components
+k = 3n due to the limited number of training data and the
+imperfect representation ability of the shallow encoder.
+Threat model: To evaluate the worst-case inversion robustness, we consider the white-box scenarios where the MIAs
+are trained with full access to the collaborative inference
+model and training dataset. We split the training and testing
+data strictly following the default setting, e.g. 50,000 images
+for training and 10,000 for testing on the CIFAR10 dataset.
+Two types of inversion attacks: the DNN-based decoding
+method [29] and the generative-based inversion method [68]
+are utilized as the MIAs. The detailed architecture and training mechanism of those threat models can be found in the
+supplementary material S.3.
+Evaluation metrics: We report the prediction accuracy and
+the reconstruction MSE to evaluate the utility and inversion
+robustness of the intermediate feature. We also report other
+metrics such as PSNR and SSIM to evaluate the robustness
+and present the experimental results in the supplementary
+material S.4. We consider the information leakage on training and inference data, where we report the MSE on reconstructing the training and testing dataset by MIAs. To further
+explore the intrinsic trade-off between the feature utility
+and inversion robustness for different defense mechanisms,
+we present the accuracy-MSE curve by varying the defense
+hyperparameters, such as the noise strength and CEM loss
+weight factor λ.
+
+5.2. Results on Different Datasets
+Results on CIFAR10: The performance of different defense
+methods on the CIFAR10 dataset is presented in Table 4. We
+provide a comparative analysis of each method, both before
+and after integrating the proposed CEM algorithm. The results indicate that the features, extracted by the lightweight
+encoder without defense mechanisms, exhibit significant redundancy, which can be exploited by MIAs to reconstruct
+high-fidelity inputs. Information pruning methods, such
+
+Table 2. Comparative results on TinyImageNet dataset: we present
+the prediction accuracy and reconstruction MSE of different defense methods using the ResNet-20 model with and without integrating the proposed CEM.
+Methods
+
+Acc.↑
+
+Dec.-based MSE [29]
+
+GAN-based MSE [68]
+
+Train↑
+
+Infer↑
+
+Train↑
+
+Infer↑
+
+Table 3. Comparative results on Facescrub dataset: we present the
+prediction accuracy and reconstruction MSE of different defense
+methods using the VGG11 model with and without integrating the
+proposed CEM.
+Methods
+
+Acc.↑
+
+Dec.-based MSE [29]
+
+GAN-based MSE [68]
+
+Train↑
+
+Infer↑
+
+Train↑
+
+Infer↑
+
+No_defense
+
+53.73
+
+0.0025
+
+0.0022
+
+0.0020
+
+0.0021
+
+No_defense
+
+86.69
+
+0.0012
+
+0.0011
+
+0.0012
+
+0.0014
+
+Bottleneck
+Bottleneck+CEM
+
+52.77
+52.25
+
+0.0107
+0.0140
+
+0.0103
+0.0136
+
+0.0091
+0.0123
+
+0.0092
+0.0125
+
+Bottleneck
+Bottleneck+CEM
+
+85.12
+85.00
+
+0.0025
+0.0036
+
+0.0025
+0.0035
+
+0.0026
+0.0038
+
+0.0027
+0.0037
+
+DistCorr [54]
+DistCorr+CEM
+
+51.79
+51.78
+
+0.0148
+0.0195
+
+0.0145
+0.0190
+
+0.0126
+0.0167
+
+0.0136
+0.0168
+
+DistCorr [54]
+DistCorr+CEM
+
+83.42
+83.78
+
+0.0038
+0.0048
+
+0.0038
+0.0047
+
+0.0041
+0.0069
+
+0.0041
+0.0074
+
+Dropout [15]
+Dropout+CEM
+
+50.72
+50.75
+
+0.0165
+0.0188
+
+0.0163
+0.0186
+
+0.0148
+0.0167
+
+0.0151
+0.0172
+
+Dropout [15]
+Dropout+CEM
+
+79.30
+79.19
+
+0.0052
+0.0074
+
+0.0052
+0.0074
+
+0.0054
+0.0076
+
+0.0057
+0.0081
+
+PATROL [7]
+PATROL+CEM
+
+51.75
+51.64
+
+0.0187
+0.0211
+
+0.0187
+0.0209
+
+0.0168
+0.0185
+
+0.0176
+0.0189
+
+PATROL [7]
+PATROL+CEM
+
+79.18
+79.88
+
+0.0099
+0.0166
+
+0.0118
+0.0185
+
+0.0114
+0.0184
+
+0.0137
+0.0192
+
+ResSFL [29]
+ResSFL+CEM
+
+51.99
+52.07
+
+0.0173
+0.0197
+
+0.0172
+0.0194
+
+0.0157
+0.0180
+
+0.0161
+0.0173
+
+ResSFL [29]
+ResSFL+CEM
+
+79.60
+79.54
+
+0.0094
+0.0128
+
+0.0112
+0.0148
+
+0.0111
+0.0143
+
+0.0142
+0.0161
+
+Noise_Nopeek [52]
+Noise_Nopeek+CEM
+
+51.63
+52.01
+
+0.0161
+0.0183
+
+0.0157
+0.0180
+
+0.0147
+0.0166
+
+0.0152
+0.0167
+
+Noise_Nopeek [52]
+Noise_Nopeek+CEM
+
+82.06
+81.96
+
+0.0052
+0.0076
+
+0.0052
+0.0075
+
+0.0053
+0.0078
+
+0.0056
+0.0090
+
+Noise_ARL [19]
+Noise_ARL+CEM
+
+51.03
+50.85
+
+0.0229
+0.0281
+
+0.0224
+0.0271
+
+0.0204
+0.0251
+
+0.0205
+0.0253
+
+Noise_ARL [19]
+Noise_ARL+CEM
+
+80.14
+80.33
+
+0.0122
+0.0182
+
+0.0155
+0.0211
+
+0.0132
+0.0212
+
+0.0158
+0.0231
+
+Average w/o CEM
+Average w/ CEM
+
+51.66
+51.62
+
+0.0167
+0.0199
+
+0.0164
+0.0195
+
+0.0148
+0.0177
+
+0.0153
+0.0178
+
+Average w/o CEM
+Average w/ CEM
+
+81.26
+81.38
+
+0.0069
+0.0101
+
+0.0079
+0.0111
+
+0.0076
+0.0114
+
+0.088
+0.0123
+
+as DistCorr [54] and dropout [15] that are based on some
+empirical observations, inevitably remove task-specific information when eliminating the redundancy, leading to a
+degradation of the prediction accuracy. Methods based on
+adversarial representation learning (ARL), such as ResSFL,
+PATROL, and Noise_ARL, offer a better trade-off in feature
+utility and robustness, achieving substantial robustness gain
+with a moderate accuracy drop. By incorporating a Gaussian mixture estimation process that is independent of the
+prediction process, the proposed CEM algorithm effectively
+increases the lower bound of the reconstruction MSE via
+maximizing the conditional entropy. This positions the CEM
+algorithm as a highly adaptable framework for assessing and
+enhancing the inversion robustness of a wide range of collaborative inference models. The results in Table 4 show that
+the integration of the CEM algorithm consistently enhances
+all defense methods, yielding an average increase in reconstruction MSE of 24.0% for training data and 12.9% for
+inference data, without compromising prediction accuracy.
+Results on TinyImageNet: The performance of different
+defense methods on the TinyImageNet dataset is presented
+in Table 5, where we provide a comparative analysis of each
+method, both before and after integrating the proposed CEM
+algorithm. The results indicate again that the integration of
+the CEM algorithm brings substantial inversion robustness
+gain. Integrating the CEM algorithm yields an average
+increase in the reconstruction MSE of 19.4% for training
+data and 17.7% for inference data, without compromising
+prediction accuracy. Meanwhile, the combination of ARLbased methods such as PATROL and Noise_ARL with CEM
+achieves the best utility and robustness trade-off bringing a
+great robustness gain with only a marginal accuracy drop.
+Results on Facescrub: The performance of different de-
+
+fense methods on the Facescrub dataset is presented in Table 6. Unlike their performance on general object classification datasets, models in this task demonstrate increased
+vulnerability to MIAs. The evaluated defense methods exhibit a notable accuracy reduction as a trade-off for increased
+inversion robustness. This may caused by the strong correlation between facial features and identity information. In this
+dataset, integrating the CEM algorithm with existing defense
+methods brings a more pronounced improvement in inversion robustness. Specifically, the incorporation of the CEM
+algorithm yields an average increase in inversion robustness of 48.2% for training data and 40.1% for inference
+data while maintaining prediction accuracy. Meanwhile,
+the combination of ARL-based methods also achieves the
+best utility and robustness trade-off, which leads to a great
+robustness gain with only a marginal accuracy drop.
+Results on CIFAR100: The results on the CIFAR-100
+dataset are provided in the supplementary materials S.5.
+Visualized results: We present the visualized MIA reconstruction on the TinyImageNet dataset in Figure 5. The
+results illustrate that incorporating the proposed CEM algorithm provides enhanced user input protection, resulting in
+decreased inverse reconstruction fidelity.
+
+5.3. Ablation Study: Effect of Hyperparameters
+To rigorously evaluate the impact of different hyperparameters, such as the noise strength and CEM weight factor
+λ, on the performance of the CEM algorithm, we conduct
+experiments under various settings of hyperparameters to
+demonstrate its robustness, versatility, and adaptability in
+diverse scenarios.
+The effect of noise strength: As discussed in Subsection 3.4, the intensity of additive Gaussian noise is pivotal
+in balancing a good trade-off between utility and robust-
+
+(a) Noise variance varying from 0.01 to 0.5
+
+(b) comparing results of different value of λ
+
+(c) comparing results of different partitions
+
+Figure 4. The effect of different hyperparameters on the performance of the proposed CEM algorithm. The effect of noise strength, λ, and
+partitioning schemes are demonstrated by the utility-robustness trade-off curve.
+
+ness. We thereby evaluate the performance of the CEM
+algorithm under various noise strengths. We utilize the
+Noise_Nopeek [52] and Noise_ARL [19] as the basic defense strategies M. In Figure 4a, we present the prediction
+accuracy Vs. reconstruction MSE curves on the CIFAR10 dataset by varying the noise variance from 0.001 to 0.5.
+Multiple models were trained to analyze the impact comprehensively. The results demonstrate that the noise variance
+significantly influences the trade-off between feature utility
+and robustness. The proposed CEM algorithm exhibits robust performance across the whole range of noise intensities.
+Integrating the CEM algorithm consistently achieves a more
+favorable balance between utility and robustness.
+The effect of λ: In Equation 8, the weight factor λ is important in adjusting the conditional entropy maximization
+during the joint optimization. To investigate the influence
+of λ, we use the Noise_ARL method [19], which achieves
+a comparatively high performance as our baseline strategy
+M. We then evaluate its performance when integrated with
+the CEM algorithm, using λ values of 0, 2, 8, 16, and 32.
+We present the prediction accuracy and reconstruction MSE
+curve in Figure 4b, by varying the noise variance from 0.001
+to 0.5. The results demonstrate that increasing λ from 0 to
+16 markedly enhances the robustness and utility trade-off.
+Different partitioning mechanisms: Encoders with more
+layers extract more task-specific features from input data,
+thereby providing improved robustness against MIAs. To
+illustrate the effectiveness of the proposed CEM under different levels of redundancy, we evaluate its performance
+across multiple partitioning schemes. Specifically, we use
+the VGG11 architecture as the backbone, partitioned at the
+1st, 2nd, and 3rd convolutional layers (denoted as c1 , c2 ,
+and c3 ), and assess the performance of CEM in combination
+with Noise_ARL [19]. We present the prediction accuracy
+Vs. reconstruction MSE curve in Figure 4c using the same
+strategy. The results demonstrate a significant performance
+advantage with deeper partitioning: specifically, partitioning
+at the third convolutional layer achieves substantial inversion
+robustness while maintaining prediction accuracy without
+degradation. Furthermore, the CEM algorithm exhibits high
+
+Raw inputs
+
+No defense
+
+Noise_ARL
+
+Noise_ARL
++CEM
+
+Figure 5. The visualized result. The last three rows are inputs
+reconstructed by MIA.
+
+adaptability, consistently enhancing the robustness-utility
+trade-off across different partitioning schemes.
+Analysis of the efficiency: The computational complexity
+on the local encoder and the cloud server across various
+methods is presented in the supplementary material S.6. The
+results confirm that integrating the proposed CEM does not
+introduce any additional computational overhead or latency.
+
+6. Conclusion
+This work addresses problems of inversion robustness in
+collaborative inference systems, where MIAs can exploit
+subtle signals within these intermediate features to reconstruct high-fidelity inputs. Existing obfuscation defenses
+seek to protect privacy by empirically eliminating feature
+redundancy. However, the precise quantification of such
+redundancy is lacking, and rigorous mathematical analysis
+is needed to elucidate the relation between redundancy minimization and enhanced inversion robustness. To solve that,
+we prove that the conditional entropy of inputs given intermediate features provides a lower bound on the reconstruction
+MSE. Based on that, we derive a differentiable lower bound
+on this conditional entropy using Gaussian mixture estimation, making it amenable for efficient optimization through
+backpropagation. Building on this, we propose a versatile
+conditional entropy maximization (CEM) algorithm that can
+be easily plugged into existing methods. Comprehensive Experiments demonstrate that the proposed CEM significantly
+and consistently boosts robustness while maintaining feature
+utility and computational efficiency.
+
+Acknowledgement
+This work was carried out at the Rapid-Rich Object Search
+(ROSE) Lab, School of Electrical & Electronic Engineering,
+Nanyang Technological University (NTU), Singapore. This
+research is supported by the National Research Foundation,
+Singapore and Infocomm Media Development Authority under its Trust Tech Funding Initiative, the Basic and Frontier
+Research Project of PCL, the Major Key Project of PCL,
+Guangdong Basic and Applied Basic Research Foundation
+under Grant 2024A1515010454, the Program of Beijing
+Municipal Science and Technology Commission Foundation (No.Z241100003524010), and in part by the PKU-NTU
+Joint Research Institute (JRI) sponsored by a donation from
+the Ng Teng Fong Charitable Foundation. Any opinions,
+findings and conclusions or recommendations expressed in
+this material are those of the author(s) and do not reflect
+the views of National Research Foundation, Singapore and
+Infocomm Media Development Authority.
+
+References
+[1] Sharif Abuadbba, Kyuyeon Kim, Minki Kim, Chandra Thapa,
+Seyit A Camtepe, Yansong Gao, Hyoungshick Kim, and
+Surya Nepal. Can we use split learning on 1d cnn models for privacy preserving training? In Proceedings of the
+15th ACM Asia conference on computer and communications
+security, 2020. 2
+[2] Josh Achiam, Steven Adler, Sandhini Agarwal, Lama Ahmad,
+Ilge Akkaya, Florencia Leoni Aleman, Diogo Almeida, Janko
+Altenschmidt, Sam Altman, Shyamal Anadkat, et al. Gpt-4
+technical report. arXiv preprint arXiv:2303.08774, 2023. 1
+[3] Martin Bertran, Natalia Martinez, Afroditi Papadaki, Qiang
+Qiu, Miguel Rodrigues, Galen Reeves, and Guillermo Sapiro.
+Adversarially learned representations for information obfuscation and inference. In Int. Conf. Machine Learning, 2019.
+1, 2
+[4] Nicolas Carlini, Jamie Hayes, Milad Nasr, Matthew Jagielski,
+Vikash Sehwag, Florian Tramer, Borja Balle, Daphne Ippolito,
+and Eric Wallace. Extracting training data from diffusion
+models. In 32nd USENIX Security Symposium (USENIX
+Security 23), 2023. 1
+[5] Sayanton V Dibbo. Sok: Model inversion attack landscape:
+Taxonomy, challenges, and future roadmap. In 2023 IEEE
+36th Computer Security Foundations Symposium (CSF), 2023.
+1
+[6] Sayanton V Dibbo, Adam Breuer, Juston Moore, and Michael
+Teti. Improving robustness to model inversion attacks via
+sparse coding architectures. Eur. Conf. Comput. Vis., 2024. 1,
+2, 5
+[7] Shiwei Ding, Lan Zhang, Miao Pan, and Xiaoyong Yuan.
+Patrol: Privacy-oriented pruning for collaborative inference
+against model inversion attacks. In Proceedings of the
+IEEE/CVF Winter Conference on Applications of Computer
+Vision, 2024. 1, 5, 6, 7, 2, 3
+[8] Hao Fang, Bin Chen, Xuan Wang, Zhi Wang, and Shu-Tao
+Xia. Gifd: A generative gradient inversion method with
+
+feature domain optimization. In Int. Conf. Comput. Vis., 2023.
+2
+[9] Matt Fredrikson, Somesh Jha, and Thomas Ristenpart. Model
+inversion attacks that exploit confidence information and basic
+countermeasures. In Proceedings of the 22nd ACM SIGSAC
+conference on computer and communications security, 2015.
+2
+[10] Craig Gentry and Shai Halevi. Implementing gentry’s fullyhomomorphic encryption scheme. In Annual international
+conference on the theory and applications of cryptographic
+techniques, 2011. 1
+[11] Xueluan Gong, Ziyao Wang, Shuaike Li, Yanjiao Chen, and
+Qian Wang. A gan-based defense framework against model
+inversion attacks. IEEE Transactions on Information Forensics and Security, 2023. 1, 2
+[12] Ian Goodfellow, Jean Pouget-Abadie, Mehdi Mirza, Bing
+Xu, David Warde-Farley, Sherjil Ozair, Aaron Courville, and
+Yoshua Bengio. Generative adversarial nets. Adv. Neural
+Inform. Process. Syst., 2014. 2
+[13] Gyojin Han, Jaehyun Choi, Haeil Lee, and Junmo Kim. Reinforcement learning-based black-box model inversion attacks.
+In Int. Conf. Comput. Vis., 2023. 3
+[14] Zecheng He, Tianwei Zhang, and Ruby B Lee. Model inversion attacks against collaborative inference. In Proceedings of
+the 35th Annual Computer Security Applications Conference,
+2019. 1
+[15] Zecheng He, Tianwei Zhang, and Ruby B Lee. Attacking and
+protecting data privacy in edge–cloud collaborative inference
+systems. IEEE Internet of Things Journal, 2020. 1, 6, 7, 2, 3
+[16] Briland Hitaj, Giuseppe Ateniese, and Fernando Perez-Cruz.
+Deep models under the gan: information leakage from collaborative deep learning. In Proceedings of the 2017 ACM
+SIGSAC conference on computer and communications security, 2017. 2
+[17] Sy-Tuyen Ho, Koh Jun Hao, Keshigeyan Chandrasegaran,
+Ngoc-Bao Nguyen, and Ngai-Man Cheung. Model inversion robustness: Can transfer learning help? In IEEE Conf.
+Comput. Vis. Pattern Recog., 2024. 1
+[18] Marco F Huber, Tim Bailey, Hugh Durrant-Whyte, and
+Uwe D Hanebeck. On entropy approximation for gaussian
+mixture random vectors. In 2008 IEEE International Conference on Multisensor Fusion and Integration for Intelligent
+Systems, 2008. 1
+[19] Jonghu Jeong, Minyong Cho, Philipp Benz, and Tae-hoon
+Kim. Noisy adversarial representation learning for effective
+and efficient image obfuscation. In Uncertainty in Artificial
+Intelligence, 2023. 1, 2, 5, 6, 7, 8, 3
+[20] Shuaifan Jin, He Wang, Zhibo Wang, Feng Xiao, Jiahui
+Hu, Yuan He, Wenwen Zhang, Zhongjie Ba, Weijie Fang,
+Shuhong Yuan, et al. {FaceObfuscator}: Defending deep
+learning-based privacy attacks with gradient descent-resistant
+features in face recognition. In 33rd USENIX Security Symposium (USENIX Security 24), 2024. 1, 2, 5
+[21] Chiraag Juvekar, Vinod Vaikuntanathan, and Anantha Chandrakasan. {GAZELLE}: A low latency framework for secure
+neural network inference. In 27th USENIX security symposium (USENIX security 18), 2018. 1
+
+[22] Sanjay Kariyappa, Atul Prakash, and Moinuddin K Qureshi.
+Maze: Data-free model stealing attack using zeroth-order
+gradient estimation. In IEEE Conf. Comput. Vis. Pattern
+Recog., 2021. 1
+[23] Alexander Kirillov, Eric Mintun, Nikhila Ravi, Hanzi Mao,
+Chloe Rolland, Laura Gustafson, Tete Xiao, Spencer Whitehead, Alexander C Berg, Wan-Yen Lo, et al. Segment anything. In Int. Conf. Comput. Vis., 2023. 1
+[24] Brian Knott, Shobha Venkataraman, Awni Hannun, Shubho
+Sengupta, Mark Ibrahim, and Laurens van der Maaten.
+Crypten: Secure multi-party computation meets machine
+learning. Adv. Neural Inform. Process. Syst., 2021. 1
+[25] Chenqi Kong, Anwei Luo, Shiqi Wang, Haoliang Li, Anderson Rocha, and Alex C Kot. Pixel-inconsistency modeling for
+image manipulation localization. IEEE Trans. Pattern Anal.
+Mach. Intell., 2025. 1
+[26] Alex Krizhevsky, Geoffrey Hinton, et al. Learning multiple
+layers of features from tiny images. 2009. 6
+[27] Ya Le and Xuan Yang. Tiny imagenet visual recognition
+challenge. 2015. 6
+[28] Ang Li, Jiayi Guo, Huanrui Yang, and Yiran Chen.
+Deepobfuscator: Adversarial training framework for
+privacy-preserving image classification. arXiv preprint
+arXiv:1909.04126, 2019. 1, 2
+[29] Jingtao Li, Adnan Siraj Rakin, Xing Chen, Zhezhi He,
+Deliang Fan, and Chaitali Chakrabarti. Ressfl: A resistance
+transfer framework for defending model inversion attack in
+split federated learning. In IEEE Conf. Comput. Vis. Pattern
+Recog., 2022. 1, 2, 3, 5, 6, 7
+[30] Junnan Li, Dongxu Li, Silvio Savarese, and Steven Hoi. Blip2: Bootstrapping language-image pre-training with frozen
+image encoders and large language models. In Int. Conf.
+Machine Learning, 2023. 1
+[31] Kiwan Maeng, Chuan Guo, Sanjay Kariyappa, and G Edward
+Suh. Bounding the invertibility of privacy-preserving instance
+encoding using fisher information. Adv. Neural Inform. Process. Syst., 2024. 2
+[32] Shagufta Mehnaz, Sayanton V Dibbo, Roberta De Viti,
+Ehsanul Kabir, Björn B Brandenburg, Stefan Mangard,
+Ninghui Li, Elisa Bertino, Michael Backes, Emiliano
+De Cristofaro, et al. Are your sensitive attributes private?
+novel model inversion attribute inference attacks on classification models. In 31st USENIX Security Symposium (USENIX
+Security 22), 2022. 1, 2
+[33] Luca Melis, Congzheng Song, Emiliano De Cristofaro, and
+Vitaly Shmatikov. Exploiting unintended feature leakage in
+collaborative learning. In 2019 IEEE symposium on security
+and privacy (SP), 2019. 2
+[34] Yuxi Mi, Yuge Huang, Jiazhen Ji, Minyi Zhao, Jiaxiang Wu,
+Xingkun Xu, Shouhong Ding, and Shuigeng Zhou. Privacypreserving face recognition using random frequency components. In Int. Conf. Comput. Vis., 2023. 2
+[35] Yuxi Mi, Zhizhou Zhong, Yuge Huang, Jiazhen Ji, Jianqing Xu, Jun Wang, Shaoming Wang, Shouhong Ding, and
+Shuigeng Zhou. Privacy-preserving face recognition using
+trainable feature subtraction. In IEEE Conf. Comput. Vis.
+Pattern Recog., 2024. 2
+
+[36] Fatemehsadat Mireshghallah, Mohammadkazem Taram,
+Prakash Ramrakhyani, Ali Jalali, Dean Tullsen, and Hadi
+Esmaeilzadeh. Shredder: Learning noise distributions to protect inference privacy. In Proceedings of the Twenty-Fifth
+International Conference on Architectural Support for Programming Languages and Operating Systems, 2020. 1, 2
+[37] Fatemehsadat Mireshghallah, Mohammadkazem Taram, Ali
+Jalali, Ahmed Taha Taha Elthakeb, Dean Tullsen, and Hadi
+Esmaeilzadeh. Not all features are equal: Discovering essential features for preserving prediction privacy. In Proceedings
+of the Web Conference 2021, 2021. 1, 2
+[38] Pratyush Mishra, Ryan Lehmkuhl, Akshayaram Srinivasan,
+Wenting Zheng, and Raluca Ada Popa. Delphi: A cryptographic inference service for neural networks. In 29th
+USENIX Security Symposium (USENIX Security 20), 2020. 1
+[39] Hong-Wei Ng and Stefan Winkler. A data-driven approach
+to cleaning large face datasets. In IEEE Int. Conf. Image
+Process., 2014. 6
+[40] Bao-Ngoc Nguyen, Keshigeyan Chandrasegaran, Milad Abdollahzadeh, and Ngai-Man Man Cheung. Label-only model
+inversion attacks via knowledge transfer. Adv. Neural Inform.
+Process. Syst., 2024. 1, 2, 3
+[41] Ngoc-Bao Nguyen, Keshigeyan Chandrasegaran, Milad Abdollahzadeh, and Ngai-Man Cheung. Re-thinking model
+inversion attacks against deep neural networks. In IEEE Conf.
+Comput. Vis. Pattern Recog., 2023. 2
+[42] Alexander Quinn Nichol, Prafulla Dhariwal, Aditya Ramesh,
+Pranav Shyam, Pamela Mishkin, Bob Mcgrew, Ilya Sutskever,
+and Mark Chen. Glide: Towards photorealistic image generation and editing with text-guided diffusion models. In Int.
+Conf. Machine Learning, 2022. 1
+[43] Olga Ohrimenko, Felix Schuster, Cédric Fournet, Aastha
+Mehta, Sebastian Nowozin, Kapil Vaswani, and Manuel Costa.
+Oblivious {Multi-Party} machine learning on trusted processors. In 25th USENIX Security Symposium (USENIX Security
+16), 2016. 1
+[44] Xiong Peng, Feng Liu, Jingfeng Zhang, Long Lan, Junjie
+Ye, Tongliang Liu, and Bo Han. Bilateral dependency optimization: Defending against model-inversion attacks. In
+Proceedings of the 28th ACM SIGKDD Conference on Knowledge Discovery and Data Mining, 2022. 2
+[45] Yixiang Qiu, Hao Fang, Hongyao Yu, Bin Chen, MeiKang
+Qiu, and Shu-Tao Xia. A closer look at gan priors: Exploiting
+intermediate features for enhanced model inversion attacks.
+In Eur. Conf. Comput. Vis., 2024. 1
+[46] Douglas A Reynolds et al. Gaussian mixture models. Encyclopedia of biometrics, 2009. 3
+[47] Ahmed Salem, Apratim Bhattacharya, Michael Backes, Mario
+Fritz, and Yang Zhang. {Updates-Leak}: Data set inference
+and reconstruction attacks in online learning. In 29th USENIX
+security symposium (USENIX Security 20), 2020. 2
+[48] Sunandini Sanyal, Sravanti Addepalli, and R Venkatesh Babu.
+Towards data-free model stealing in a hard label setting. In
+IEEE Conf. Comput. Vis. Pattern Recog., 2022. 1
+[49] Nir Shlezinger, Erez Farhan, Hai Morgenstern, and Yonina C
+Eldar. Collaborative inference via ensembles on the edge. In
+ICASSP, 2021. 1
+
+[50] Lukas Struppek, Dominik Hintersdorf, Antonio De Almeida
+Correia, Antonia Adler, and Kristian Kersting. Plug & play
+attacks: Towards robust and flexible model inversion attacks.
+In Int. Conf. Machine Learning, 2022. 1
+[51] Chandra Thapa, Pathum Chamikara Mahawaga Arachchige,
+Seyit Camtepe, and Lichao Sun. Splitfed: When federated
+learning meets split learning. In AAAI, 2022. 1
+[52] Tom Titcombe, Adam J Hall, Pavlos Papadopoulos, and
+Daniele Romanini. Practical defences against model inversion attacks for split neural networks. arXiv preprint
+arXiv:2104.05743, 2021. 2, 5, 6, 7, 8, 3
+[53] Praneeth Vepakomma, Otkrist Gupta, Tristan Swedish, and
+Ramesh Raskar. Split learning for health: Distributed deep
+learning without sharing raw patient data. arXiv preprint
+arXiv:1812.00564, 2018. 1
+[54] Praneeth Vepakomma, Abhishek Singh, Otkrist Gupta, and
+Ramesh Raskar. Nopeek: Information leakage reduction to
+share activations in distributed deep learning. In 2020 International Conference on Data Mining Workshops (ICDMW),
+2020. 5, 6, 7, 2, 3
+[55] Sameer Wagh, Shruti Tople, Fabrice Benhamouda, Eyal
+Kushilevitz, Prateek Mittal, and Tal Rabin. Falcon: Honestmajority maliciously secure framework for private deep learning. Proceedings on Privacy Enhancing Technologies, 2021.
+1
+[56] Kuan-Chieh Wang, Yan Fu, Ke Li, Ashish Khisti, Richard
+Zemel, and Alireza Makhzani. Variational model inversion
+attacks. Adv. Neural Inform. Process. Syst., 2021. 2
+[57] Tianhao Wang, Yuheng Zhang, and Ruoxi Jia. Improving
+robustness to model inversion attacks via mutual information
+regularization. In AAAI, 2021. 2
+[58] Yinggui Wang, Jian Liu, Man Luo, Le Yang, and Li Wang.
+Privacy-preserving face recognition in the frequency domain.
+In AAAI, 2022. 2
+[59] Zhibo Wang, Mengkai Song, Zhifei Zhang, Yang Song, Qian
+Wang, and Hairong Qi. Beyond inferring class representatives: User-level privacy leakage from federated learning. In
+IEEE INFOCOM 2019-IEEE conference on computer communications, 2019. 2
+[60] Song Xia, Wenhan Yang, Yi Yu, Xun Lin, Henghui Ding,
+Lingyu Duan, and Xudong Jiang. Transferable adversarial
+attacks on sam and its downstream models. In Adv. Neural
+Inform. Process. Syst., 2024. 1
+[61] Taihong Xiao, Yi-Hsuan Tsai, Kihyuk Sohn, Manmohan
+Chandraker, and Ming-Hsuan Yang. Adversarial learning
+of privacy-preserving and task-oriented representations. In
+AAAI, 2020. 1, 2
+[62] Mengda Yang, Ziang Li, Juan Wang, Hongxin Hu, Ao Ren,
+Xiaoyang Xu, and Wenzhe Yi. Measuring data reconstruction
+defenses in collaborative inference systems. Adv. Neural
+Inform. Process. Syst., 2022. 2
+[63] Ziqi Yang, Jiyi Zhang, Ee-Chien Chang, and Zhenkai Liang.
+Neural network inversion in adversarial setting via background knowledge alignment. In Proceedings of the 2019
+ACM SIGSAC Conference on Computer and Communications
+Security, 2019. 2
+[64] Ziqi Yang, Lijin Wang, Da Yang, Jie Wan, Ziming Zhao, EeChien Chang, Fan Zhang, and Kui Ren. Purifier: Defending
+
+data inference attacks via transforming confidence scores. In
+AAAI, 2023. 1
+[65] Yupeng Yin, Xianglong Zhang, Huanle Zhang, Feng Li, Yue
+Yu, Xiuzhen Cheng, and Pengfei Hu. Ginver: Generative
+model inversion attacks against collaborative inference. In
+Proceedings of the ACM Web Conference 2023, 2023. 2, 3
+[66] Yi Yu, Song Xia, Xun Lin, Wenhan Yang, Shijian Lu, Yappeng Tan, and Alex Kot. Backdoor attacks against noreference image quality assessment models via a scalable
+trigger. In AAAI, 2025. 1
+[67] Xiaojian Yuan, Kejiang Chen, Jie Zhang, Weiming Zhang,
+Nenghai Yu, and Yang Zhang. Pseudo label-guided model inversion attack via conditional generative adversarial network.
+In AAAI, 2023. 2
+[68] Yuheng Zhang, Ruoxi Jia, Hengzhi Pei, Wenxiao Wang, Bo
+Li, and Dawn Song. The secret revealer: Generative modelinversion attacks against deep neural networks. In IEEE Conf.
+Comput. Vis. Pattern Recog., 2020. 2, 3, 6, 7, 1
+[69] Xuejun Zhao, Wencan Zhang, Xiaokui Xiao, and Brian Lim.
+Exploiting explanations for model inversion attacks. In Int.
+Conf. Comput. Vis., 2021. 1
+[70] Wei Zong, Yang-Wai Chow, Willy Susilo, Joonsang Baek,
+Jongkil Kim, and Seyit Camtepe. Ipremover: A generative
+model inversion attack against deep neural network fingerprinting and watermarking. In AAAI, 2024. 1, 2
+
+Theoretical Insights in Model Inversion Robustness and Conditional Entropy
+Maximization for Collaborative Inference Systems
+Supplementary Material
+7. Proof of Theorem 1
+Given the covariance matrix Cov(x|z), the conditional entropy H(x|z) satisfies that:
+
+
+
+1
+H(x|z) ≤ EZ
+log (2πe)d det (Cov(x|z)) , (9)
+2
+where det denotes the determinant of the matrix. Equation 9 formalizes the principle that the Gaussian distribution
+achieves the maximum entropy among all distributions with
+a given covariance.
+Let λ ∈ {λ1 , ..., λd } denote the eigenvalues of the matrix
+Cov(x|z). It follows that:
+det(Cov(x|z)) =
+
+d
+Y
+
+λi , T r(Cov(x|z)) =
+
+i=1
+
+d
+X
+
+λi . (10)
+
+i=1
+
+∗8
+
+Images
+
+
+
+1
+πi − log(πi ) + log((2πe)d |Σi + Σp |) .
+2
+i=1
+(15)
+
+Sigmoid
+
+k
+X
+
+3x3 conv
+
+1
+log((2πe)d |Σp |).
+2
+(14)
+It is hard to give a closed-form representation of H(z) when
+z follows the Gaussian mixture distribution. In [18], an
+upper bound of H(z) is given by:
+I(z; ẑ) = H(z) − H(z|ẑ) = H(z) −
+
+Transconv
+
+Proposition 2 illustrates that maximizing the H(x|z) is
+equivalent to minimizing the mutual information I(z; ẑ),
+which is:
+
++
+
+ReLU
+
+8. Proof of Theorem 2
+
+∗n
+3x3 conv
+
+(13)
+
+Batch norm
+
+(12)
+
+3x3 conv
+
+(11)
+
+which concludes the proof of Theorem 1.
+
+H(z) ≤
+
+Decoding-based inversion model: We allow the inversion
+adversary to utilize a complex inversion model to reconstruct
+the original inputs. Specifically, we utilize a decoder network
+with 8 concatenated residual blocks and the corresponding
+number of transpose convolutional blocks to recover the
+original size of the input. Each convolutional layer has 64
+channels.
+
+Batch norm
+
+As the log function is concave, we can get:
+
+
+2πe
+d
+H(x|z) ≤ log
+EZ [T r (Cov(x|z))] ,
+2
+d
+d
+≤ log (2πeε) ,
+2
+
+9. Architecture and Training details of Inversion Models
+
+Features
+
+Using the Jensen inequality, we can get:
+
+
+
+d
+T r (Cov(x|z))
+log 2πe
+H(x|z) ≤ EZ
+,
+2
+d
+
+Therefore, we claim that the mutual information I(z; ẑ)
+satisfies that:
+
+
+k
+X
+1
+|Σi + Σp |
+I(z; ẑ) ≤
+πi − log(πi ) + log(
+) ,
+2
+|Σp |
+i=1
+(16)
+which concludes the proof of Theorem 2.
+
+Figure 6. The structure of the decoding network.
+
+The architecture of the decoding-based inversion model is
+illustrated in Figure 6. Specifically, the initial eight residual blocks are designed to process the extracted features,
+while the transposed convolutional layers progressively upsample the feature maps to match the dimensions of the
+original image. The final convolutional layer performs the
+concluding processing, and the application of the Sigmoid
+activation function normalizes the output to the range [0,
+1]. The decoder comprises approximately 711.54k trainable
+parameters and requires 90.66 MMAC operations for computation. We train the decoder model for 50 epochs using
+the Adam optimizer with an initial learning rate of 0.005.
+GAN-based inversion model: We follows the methodology
+outlined in [68] to implement the GAN-based inversion attack. Concurrently, we replace the original generator with
+the proposed decoding-based network, which is architecturally more complex and delivers superior performance.
+The GAN inversion model is trained for 150 epochs using
+the Adam optimizer with an initial learning rate of 0.005.
+Additionally, a MSE loss term is incorporated to regularize
+the training process, where we find it effectively facilitates
+
+the GAN inversion model in achieving a lower reconstruction
+MSE.
+
+Table 5. Comparative results on CIFAR100 dataset: we present the
+accuracy and reconstruction SSIM and PSNR on the validation set.
+Dec.-based MIA [29]
+
+GAN-based MIA [68]
+
+SSIM↓
+
+PSNR↓
+
+SSIM↓
+
+PSNR↓
+
+68.43
+68.42
+
+0.975
+0.856
+
+31.54
+22.36
+
+0.970
+0.937
+
+30.96
+26.98
+
+DistCorr [54]
+DistCorr+CEM
+
+66.21
+66.27
+
+0.880
+0.812
+
+22.67
+21.30
+
+0.928
+0.877
+
+26.02
+23.46
+
+Dropout [15]
+Dropout+CEM
+
+65.85
+65.92
+
+0.865
+0.816
+
+23.76
+22.21
+
+0.936
+0.890
+
+27.44
+24.94
+
+PATROL [7]
+PATROL+CEM
+
+65.10
+65.07
+
+0.478
+0.440
+
+14.74
+13.77
+
+0.634
+0.603
+
+16.23
+15.96
+
+ResSFL [29]
+ResSFL+CEM
+
+66.94
+66.96
+
+0.866
+0.770
+
+22.92
+20.31
+
+0.935
+0.866
+
+26.98
+23.37
+
+Noise_Nopeek [52]
+Noise_Nopeek+CEM
+
+65.55
+65.33
+
+0.841
+0.797
+
+22.00
+20.80
+
+0.890
+0.858
+
+24.20
+22.83
+
+Noise_ARL [19]
+Noise_ARL+CEM
+
+62.58
+62.34
+
+0.521
+0.457
+
+15.57
+16.27
+
+0.691
+0.599
+
+17.85
+14.40
+
+Average w/o CEM
+Average w/ CEM
+
+65.81
+65.75
+
+0.775
+0.706
+
+21.88
+19.57
+
+0.854
+0.804
+
+24.24
+21.70
+
+10. Experimental results of SSIM and PSNR
+
+Methods
+
+The experimental results of reconstruction SSIM and PSNR
+on the validation set on the CIFAR10, CIFAR100, TinyImageNet, and FaceScrub datasets are presented in Table 4 to 7.
+We provide a comparative analysis of each method, both
+before and after integrating the proposed CEM algorithm.
+The results show that the integration of the CEM algorithm
+consistently enhances all defense methods on four datasets.
+On the CIFAR10 dataset, plugging in our proposed CEM
+algorithm improves the average of SSIM from 0.673 to
+0.639 and PSNR from 18.28 to 17.51. On the CIFAR100
+dataset, plugging in our proposed CEM algorithm improves
+the average of SSIM from 0.814 to 0.755 and PSNR from
+23.06 to 20.63. On the TinyImageNet dataset, plugging
+in our proposed CEM algorithm improves the average of
+SSIM from 0.567 to 0.523 and PSNR from 18.09 to 17.37.
+On the FaceScrub dataset, plugging in our proposed CEM
+algorithm improves the average of SSIM from 0.794 to
+0.752 and PSNR from 21.59 to 20.07.
+
+Bottleneck
+Bottleneck+CEM
+
+Table 6. Comparative results on TinyImageNet dataset: we present
+the accuracy and reconstruction SSIM and PSNR on the validation
+set.
+Methods
+
+Table 4. Comparative results on CIFAR10 dataset: we present the
+accuracy and reconstruction SSIM and PSNR on the validation set.
+Dec.-based MIA [29]
+
+GAN-based MIA [68]
+
+SSIM↓
+
+PSNR↓
+
+SSIM↓
+
+PSNR↓
+
+0.863
+0.813
+
+23.82
+22.36
+
+0.861
+0.783
+
+23.46
+20.96
+
+89.52
+89.80
+
+0.779
+0.757
+
+20.86
+20.31
+
+0.780
+0.760
+
+20.55
+20.17
+
+Dropout [15]
+Dropout+CEM
+
+87.75
+87.53
+
+0.729
+0.682
+
+19.82
+18.72
+
+0.733
+0.687
+
+19.54
+18.47
+
+PATROL [7]
+PATROL+CEM
+
+89.58
+89.67
+
+0.537
+0.506
+
+15.33
+14.74
+
+0.558
+0.520
+
+15.12
+14.59
+
+ResSFL [29]
+ResSFL+CEM
+
+89.68
+90.11
+
+0.595
+0.571
+
+16.19
+16.00
+
+0.639
+0.583
+
+16.14
+15.63
+
+Noise_Nopeek [52]
+Noise_Nopeek+CEM
+
+87.19
+87.08
+
+0.664
+0.643
+
+17.98
+17.59
+
+0.668
+0.651
+
+17.82
+17.49
+
+Noise_ARL [19]
+Noise_ARL+CEM
+
+87.78
+87.62
+
+0.501
+0.484
+
+14.73
+14.48
+
+0.518
+0.502
+
+14.65
+14.40
+
+Average w/o CEM
+Average w/ CEM
+
+88.91
+88.92
+
+0.667
+0.637
+
+18.39
+17.74
+
+0.680
+0.641
+
+18.18
+17.38
+
+Methods
+
+Acc.↑
+
+Bottleneck
+Bottleneck+CEM
+
+90.87
+90.69
+
+DistCorr [54]
+DistCorr+CEM
+
+11. Experimental results on CIFAR100
+The performance of different defense methods on the CIFAR100 dataset is presented in Table 8, where we provide a
+comparative analysis of each method, both before and after
+integrating the proposed CEM algorithm. The results indicate again that the integration of the CEM algorithm brings
+substantial inversion robustness gain. Integrating the CEM
+algorithm yields an average increase in the reconstruction
+MSE of 40.5% for training data and 44.8% for inference
+data, without compromising prediction accuracy.
+
+Acc.↑
+
+Acc.↑
+
+Dec.-based MIA [29]
+
+GAN-based MIA [68]
+
+SSIM↓
+
+PSNR↓
+
+SSIM↓
+
+PSNR↓
+
+Bottleneck
+Bottleneck+CEM
+
+52.77
+52.52
+
+0.666
+0.593
+
+19.87
+18.86
+
+0.698
+0.623
+
+20.36
+19.03
+
+DistCorr [54]
+DistCorr+CEM
+
+51.79
+51.78
+
+0.598
+0.527
+
+18.38
+17.21
+
+0.627
+0.553
+
+18.66
+17.74
+
+Dropout [15]
+Dropout+CEM
+
+50.72
+50.75
+
+0.548
+0.511
+
+17.87
+17.30
+
+0.567
+0.533
+
+18.21
+17.64
+
+PATROL [7]
+PATROL+CEM
+
+51.75
+51.64
+
+0.512
+0.489
+
+17.28
+16.79
+
+0.536
+0.524
+
+17.54
+17.23
+
+ResSFL [29]
+ResSFL+CEM
+
+51.99
+52.07
+
+0.522
+0.495
+
+17.64
+17.12
+
+0.552
+0.521
+
+17.93
+17.61
+
+Noise_Nopeek [52]
+Noise_Nopeek+CEM
+
+51.63
+52.01
+
+0.578
+0.527
+
+18.04
+17.44
+
+0.588
+0.551
+
+18.18
+17.77
+
+Noise_ARL [19]
+Noise_ARL+CEM
+
+51.03
+50.85
+
+0.463
+0.428
+
+16.49
+15.67
+
+0.486
+0.441
+
+16.88
+15.96
+
+Average w/o CEM
+Average w/ CEM
+
+51.66
+51.62
+
+0.555
+0.510
+
+17.93
+17.19
+
+0.579
+0.535
+
+18.25
+17.56
+
+12. Analysis of the efficiency
+We evaluate the inference time and model size of the local
+encoder and cloud server using one RTX 4090 GPU, with
+detailed results presented in Table 9. Notably, all methods,
+except for PATROL, exhibit identical inference efficiency
+and parameter counts. The inference time is measured by
+processing a batch of 128 images over 100 times
+
+Table 7. Comparative results on FaceScrub dataset: we present
+the prediction accuracy and reconstruction SSIM and PSNR on the
+validation set.
+Methods
+
+Acc.↑
+
+Dec.-based MIA [29]
+
+GAN-based MIA [68]
+
+SSIM↓
+
+PSNR↓
+
+SSIM↓
+
+PSNR↓
+
+Bottleneck
+Bottleneck+CEM
+
+85.12
+85.00
+
+0.898
+0.860
+
+26.02
+24.45
+
+0.864
+0.821
+
+25.68
+24.31
+
+DistCorr [54]
+DistCorr+CEM
+
+83.42
+83.78
+
+0.853
+0.833
+
+24.20
+23.27
+
+0.848
+0.795
+
+23.87
+21.30
+
+Dropout [15]
+Dropout+CEM
+
+79.30
+79.19
+
+0.813
+0.776
+
+22.83
+21.30
+
+0.808
+0.771
+
+22.44
+20.91
+
+PATROL [7]
+PATROL+CEM
+
+79.18
+79.88
+
+0.737
+0.685
+
+19.28
+17.32
+
+0.731
+0.681
+
+18.63
+17.16
+
+ResSFL [29]
+ResSFL+CEM
+
+79.60
+79.54
+
+0.745
+0.713
+
+19.50
+18.29
+
+0.736
+0.710
+
+18.47
+17.93
+
+Noise_Nopeek [52]
+Noise_Nopeek+CEM
+
+82.06
+81.96
+
+0.844
+0.784
+
+22.83
+21.24
+
+0.839
+0.777
+
+22.51
+20.45
+
+Noise_ARL [19]
+Noise_ARL+CEM
+
+80.14
+80.33
+
+0.705
+0.669
+
+18.09
+16.75
+
+0.710
+0.660
+
+18.01
+16.36
+
+Average w/o CEM
+Average w/ CEM
+
+81.26
+81.38
+
+0.799
+0.760
+
+21.82
+20.37
+
+0.790
+0.745
+
+21.37
+19.77
+
+Table 8. Comparative results on CIFAR100 dataset: we present
+the accuracy and reconstruction MSE of different defense methods
+using the VGG11 model with and without integrating the proposed
+CEM.
+Methods
+
+Acc.↑
+
+Dec.-based MSE [29]
+
+GAN-based MSE [68]
+
+Train↑
+
+Infer↑
+
+Train↑
+
+Infer↑
+
+Bottleneck
+Bottleneck+CEM
+
+68.43
+68.42
+
+0.0007
+0.0058
+
+0.0007
+0.0059
+
+0.0009
+0.0019
+
+0.0008
+0.0020
+
+DistCorr [54]
+DistCorr+CEM
+
+66.21
+66.27
+
+0.0054
+0.0074
+
+0.0055
+0.0075
+
+0.0023
+0.0044
+
+0.0025
+0.0045
+
+Dropout [15]
+Dropout+CEM
+
+65.85
+65.92
+
+0.0042
+0.0060
+
+0.0043
+0.0061
+
+0.0016
+0.0031
+
+0.0018
+0.0032
+
+PATROL [7]
+PATROL+CEM
+
+65.10
+65.07
+
+0.0335
+0.0419
+
+0.0346
+0.0423
+
+0.0196
+0.0235
+
+0.0238
+0.0253
+
+ResSFL [29]
+ResSFL+CEM
+
+66.94
+66.96
+
+0.0051
+0.0093
+
+0.0052
+0.0095
+
+0.0019
+0.0043
+
+0.0020
+0.0046
+
+Noise_Nopeek [52]
+Noise_Nopeek+CEM
+
+65.55
+65.33
+
+0.0063
+0.0083
+
+0.0063
+0.0082
+
+0.0037
+0.0052
+
+0.0038
+0.0052
+
+Noise_ARL [19]
+Noise_ARL+CEM
+
+62.58
+62.34
+
+0.0270
+0.0373
+
+0.0277
+0.0380
+
+0.0143
+0.0219
+
+0.0164
+0.0236
+
+Average w/o CEM
+Average w/ CEM
+
+65.81
+65.75
+
+0.0117
+0.0165
+
+0.0120
+0.0168
+
+0.0063
+0.0095
+
+0.0073
+0.0102
+
+Table 9. Analysis of the efficiency.
+Local encoder
+
+Method
+
+Could server
+
+Parameters
+
+Flops
+
+Infere time
+
+Parameters
+
+Flops
+
+PATROL
+
+0.083M
+
+27.3 MAC
+
+65.61 ms
+
+9.78M
+
+136.38MAC
+
+Infere time
+175.92ms
+
+OTHERS
+
+0.085M
+
+21.9 MAC
+
+55.16 ms
+
+9.78M
+
+133.59MAC
+
+169.87ms
+
+

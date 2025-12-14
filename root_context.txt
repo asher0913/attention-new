@@ -1,0 +1,40 @@
+        if "pruning" in self.AT_regularization_option:
+            self.double_local_layer = True
+        else:
+            self.double_local_layer = False
+        
+        ''' Activation Defense (end)'''
+
+        # Always use attention CEM surrogate to replace GMM (only module difference)
+        self.use_attention_cem = True
+        self.attention_cem = None
+
+
+        # client sampling: dividing datasets to actual number of clients, self.num_clients is fake num of clients for ease of simulation.
+        # multiplier = 1/self.client_sample_ratio #100
+        # actual_num_users = int(multiplier * self.num_client)
+        # self.
+        actual_num_users = 1
+        self.collude_use_public=False
+        num_workers=8
+        # setup dataset
+        if self.dataset == "cifar10":
+            self.client_dataloader, self.mem_trainloader, self.mem_testloader = get_cifar10_trainloader(batch_size=self.batch_size,
+                                                                                                        num_workers=num_workers,
+                                                                                                        shuffle=True,
+                                                                                                        num_client=actual_num_users,
+                                                                                                        collude_use_public=self.collude_use_public
+                                                                                                        )
+            self.client_dataloader_rob, self.mem_trainloader_rob, self.mem_testloader_rob = get_cifar10_trainloader(batch_size=self.batch_size*20,
+                                                                                                        num_workers=num_workers,
+                                                                                                        shuffle=True,
+                                                                                                        num_client=actual_num_users,
+                                                                                                        collude_use_public=self.collude_use_public
+                                                                                                        )
+            self.pub_dataloader, self.nomem_trainloader, self.nomem_testloader = get_cifar10_testloader(batch_size=self.batch_size,
+                                                                                                        num_workers=num_workers,
+                                                                                                        shuffle=False)
+            self.orig_class = 10
+            self.feature_size = 8
+        elif self.dataset == "cifar100":
+            self.client_dataloader, self.mem_trainloader, self.mem_testloader = get_cifar100_trainloader(batch_size=self.batch_size,
