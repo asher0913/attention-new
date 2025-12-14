@@ -1,10 +1,6 @@
 /data
 /saves
 /CEM-main
-# CEM-main/
-*.md
-*.txt
-*.docx
 !report/**
 !report/
 !interim_text/
@@ -13,10 +9,6 @@
 !interim/**
 !proposal.txt
 !proposal.pdf
-*.png
-*.jpg
-*.jpeg
-*.gif
 !latex/
 !latex/**
 !documents/
