@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.11.2)  8 DEC 2025 21:19
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.11.2)  14 DEC 2025 04:22
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -675,31 +675,86 @@ Package: float 2001/11/08 v1.3d Float enhancements (AL)
 \@float@everytoks=\toks39
 \@floatcapt=\box71
 )
+(/usr/local/texlive/2025/texmf-dist/tex/latex/algorithm2e/algorithm2e.sty
+Package: algorithm2e 2017/07/18 v5.2 algorithms environments
+\c@AlgoLine=\count361
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/base/ifthen.sty
+Package: ifthen 2024/03/16 v1.1e Standard LaTeX ifthen package (DPC)
+)
+\algocf@hangindent=\skip58
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/ifoddpage/ifoddpage.sty
+Package: ifoddpage 2022/10/18 v1.2 Conditionals for odd/even page detection
+\c@checkoddpage=\count362
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/tools/xspace.sty
+Package: xspace 2014/10/28 v1.13 Space after command names (DPC,MH)
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/relsize/relsize.sty
+Package: relsize 2013/03/29 ver 4.1
+)
+\skiptotal=\skip59
+\skiplinenumber=\skip60
+\skiprule=\skip61
+\skiphlne=\skip62
+\skiptext=\skip63
+\skiplength=\skip64
+\algomargin=\skip65
+\skipalgocfslide=\skip66
+\algowidth=\dimen285
+\inoutsize=\dimen286
+\inoutindent=\dimen287
+\interspacetitleruled=\dimen288
+\interspacealgoruled=\dimen289
+\interspacetitleboxruled=\dimen290
+\algocf@ruledwidth=\skip67
+\algocf@inoutbox=\box72
+\algocf@inputbox=\box73
+\AlCapSkip=\skip68
+\AlCapHSkip=\skip69
+\algoskipindent=\skip70
+\algocf@nlbox=\box74
+\algocf@hangingbox=\box75
+\algocf@untilbox=\box76
+\algocf@skipuntil=\skip71
+\algocf@capbox=\box77
+\algocf@lcaptionbox=\skip72
+\algoheightruledefault=\skip73
+\algoheightrule=\skip74
+\algotitleheightruledefault=\skip75
+\algotitleheightrule=\skip76
+\c@algocfline=\count363
+\c@algocfproc=\count364
+\c@algocf=\count365
+\algocf@algoframe=\box78
+\algocf@algobox=\box79
+)
 (/usr/local/texlive/2025/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 File: l3backend-pdftex.def 2025-10-09 L3 backend support: PDF output (pdfTeX)
-\l__color_backend_stack_int=\count361
+\l__color_backend_stack_int=\count366
 )
 (./main.aux)
 \openout1 = `main.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -737,16 +792,16 @@ LaTeX Font Info:    ... okay on input line 16.
 
 (/usr/local/texlive/2025/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count362
-\scratchdimen=\dimen285
-\scratchbox=\box72
-\nofMPsegments=\count363
-\nofMParguments=\count364
+\scratchcounter=\count367
+\scratchdimen=\dimen291
+\scratchbox=\box80
+\nofMPsegments=\count368
+\nofMParguments=\count369
 \everyMPshowfont=\toks40
-\MPscratchCnt=\count365
-\MPscratchDim=\dimen286
-\MPnumerator=\count366
-\makeMPintoPDFobject=\count367
+\MPscratchCnt=\count370
+\MPscratchDim=\dimen292
+\MPnumerator=\count371
+\makeMPintoPDFobject=\count372
 \everyMPtoPDFconversion=\toks41
 ) (/usr/local/texlive/2025/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
 Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
@@ -757,28 +812,28 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
-Package hyperref Info: Link coloring OFF on input line 16.
+Package hyperref Info: Link coloring OFF on input line 17.
 
 (./main.out) (./main.out)
 \@outlinefile=\write4
 \openout4 = `main.out'.
 
-<nottingham-logo.png, id=127, 191.94913pt x 70.8246pt>
+<nottingham-logo.png, id=175, 191.94913pt x 70.8246pt>
 File: nottingham-logo.png Graphic file (type png)
 <use nottingham-logo.png>
-Package pdftex.def Info: nottingham-logo.png  used on input line 24.
+Package pdftex.def Info: nottingham-logo.png  used on input line 25.
 (pdftex.def)             Requested size: 226.48395pt x 83.57118pt.
  [1
 
 {/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map} <./notti
 ngham-logo.png>]
-LaTeX Font Info:    Trying to load font information for U+msa on input line 59.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 60.
 
 
 (/usr/local/texlive/2025/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 59.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 60.
 
 
 (/usr/local/texlive/2025/texmf-dist/tex/latex/amsfonts/umsb.fd
@@ -787,36 +842,178 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 \tf@toc=\write5
 \openout5 = `main.toc'.
 
- [3] [4{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts
-1.enc}] [5] (./main.bbl [6]) [7] (./main.aux)
+ [3] [4] [5] [6] [7{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super
+/cm-super-ts1.enc}] [8] [9] [10]
+Overfull \hbox (4.23882pt too wide) in paragraph at lines 158--159
+[] []\OT1/cmr/bx/n/12 Ab-la-tion and re-port-ing plan.[] \OT1/cmr/m/n/12 Within
+ this pro-to-col, ab-la-tions will vary only surrogate-
+ []
+
+[11] [12] [13] [14] [15
+pdfTeX warning (ext4): destination with the same identifier (name{algocf.1}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.314 \begin{equation}
+                      ] [16] [17]
+Overfull \vbox (10.7151pt too high) has occurred while \output is active []
+
+
+[18
+pdfTeX warning (ext4): destination with the same identifier (name{algocf.2}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.527 ...n{Numerical Stability and Regularization}
+                                                  ] [19] [20]
+<fig_metrics_overview.png, id=639, 939.51pt x 289.08pt>
+File: fig_metrics_overview.png Graphic file (type png)
+<use fig_metrics_overview.png>
+Package pdftex.def Info: fig_metrics_overview.png  used on input line 585.
+(pdftex.def)             Requested size: 430.31812pt x 132.40497pt.
+ [21
+pdfTeX warning (ext4): destination with the same identifier (name{table.1}) has
+ been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.595 
+      
+pdfTeX warning (ext4): destination with the same identifier (name{figure.1}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.595 
+       <./fig_metrics_overview.png>]
+<fig_attack_curves.png, id=662, 505.89pt x 289.08pt>
+File: fig_attack_curves.png Graphic file (type png)
+<use fig_attack_curves.png>
+Package pdftex.def Info: fig_attack_curves.png  used on input line 598.
+(pdftex.def)             Requested size: 271.7835pt x 155.30688pt.
+<fig_psnr_bar.png, id=671, 397.485pt x 289.08pt>
+File: fig_psnr_bar.png Graphic file (type png)
+<use fig_psnr_bar.png>
+Package pdftex.def Info: fig_psnr_bar.png  used on input line 611.
+(pdftex.def)             Requested size: 271.7835pt x 197.66571pt.
+ [22
+pdfTeX warning (ext4): destination with the same identifier (name{figure.2}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.615 
+       <./fig_attack_curves.png>]
+<fig_tradeoff.png, id=680, 722.7pt x 289.08pt>
+File: fig_tradeoff.png Graphic file (type png)
+<use fig_tradeoff.png>
+Package pdftex.def Info: fig_tradeoff.png  used on input line 618.
+(pdftex.def)             Requested size: 430.31812pt x 172.12602pt.
+ [23
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.630 
+      
+pdfTeX warning (ext4): destination with the same identifier (name{figure.4}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.630 
+       <./fig_psnr_bar.png> <./fig_tradeoff.png>]
+Underfull \hbox (badness 10000) in paragraph at lines 647--647
+[]\OT1/cmr/m/n/10.95 Literature re-view &
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 651--651
+[]\OT1/cmr/m/n/10.95 Method 1: gated-
+ []
+
+
+Underfull \hbox (badness 3849) in paragraph at lines 655--655
+[]\OT1/cmr/m/n/10.95 Dec 2025--Feb
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 657--657
+[]\OT1/cmr/m/n/10.95 Cross-dataset eval-u-a-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 657--657
+[]\OT1/cmr/m/n/10.95 Planned: ex-tend pro-to-col be-yond
+ []
+
+[24]
+<artifacts/gantt_midterm_proposal.png, id=714, 867.24pt x 505.89pt>
+File: artifacts/gantt_midterm_proposal.png Graphic file (type png)
+<use artifacts/gantt_midterm_proposal.png>
+Package pdftex.def Info: artifacts/gantt_midterm_proposal.png  used on input li
+ne 666.
+(pdftex.def)             Requested size: 430.31812pt x 251.02228pt.
+ [25
+pdfTeX warning (ext4): destination with the same identifier (name{table.2}) has
+ been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.673 
+      
+pdfTeX warning (ext4): destination with the same identifier (name{figure.5}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.673 
+       <./artifacts/gantt_midterm_proposal.png>] [26]
+Overfull \hbox (18.00317pt too wide) in paragraph at lines 691--692
+\OT1/cmr/m/n/12 en-tropy sur-ro-gate rather than to other changes. Pri-vacy was
+ as-sessed with MSE/SSIM/PSNR
+ []
+
+[27] (./main.bbl [28
+
+] [29] [30] [31]) [32] (./main.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2025-10-24>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 920031E19D72D9EB504D461B436052E0;5619.
+(rerunfilecheck)             Checksum: AC553F8F62EDD662A9A914BA108B9566;8301.
  ) 
 Here is how much of TeX's memory you used:
- 23356 strings out of 467578
- 443830 string characters out of 5420560
- 851556 words of memory out of 5000000
- 51795 multiletter control sequences out of 15000+600000
- 636771 words of font info for 73 fonts, out of 8000000 for 9000
+ 24767 strings out of 467578
+ 467837 string characters out of 5420560
+ 894266 words of memory out of 5000000
+ 52997 multiletter control sequences out of 15000+600000
+ 641362 words of font info for 93 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 99i,5n,118p,1664b,573s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 99i,18n,118p,1671b,598s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb
 ></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb>
-</usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><
-/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></
-usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></us
-r/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/
-local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/l
-ocal/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/lo
-cal/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb>
-Output written on main.pdf (7 pages, 210771 bytes).
+</usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb></
+usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbxti10.pfb><
+/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></
+usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmitt10.pfb></
+usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></u
+sr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></us
+r/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/
+local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/lo
+cal/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/loca
+l/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/
+texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/tex
+live/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texliv
+e/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive
+/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/local/texlive/2
+025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/202
+5/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texlive/2025
+/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/local/texlive/2025/
+texmf-dist/fonts/type1/public/amsfonts/cm/cmti8.pfb></usr/local/texlive/2025/te
+xmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2025/tex
+mf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/local/texlive/2025/texm
+f-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></usr/local/texlive/2025/
+texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb>
+Output written on main.pdf (32 pages, 1105095 bytes).
 PDF statistics:
- 276 PDF objects out of 1000 (max. 8388607)
- 244 compressed objects within 3 object streams
- 48 named destinations out of 1000 (max. 500000)
- 258 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 942 PDF objects out of 1000 (max. 8388607)
+ 839 compressed objects within 9 object streams
+ 229 named destinations out of 1000 (max. 500000)
+ 379 words of extra memory for PDF output out of 10000 (max. 10000000)
 

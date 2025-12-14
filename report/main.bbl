@@ -1,5 +1,26 @@
 \begin{thebibliography}{10}
 
+\bibitem{flamingo}
+Jean-Baptiste Alayrac, Jeff Donahue, Pauline Luc, Antoine Miech, Iain Barr,
+  Yana Hasson, Karel Lenc, Arthur Mensch, Katherine Millican, Malcolm Reynolds,
+  Roman Ring, Eliza Rutherford, Serkan Cabi, Tengda Han, Zhitao Gong, Sina
+  Samangooei, Marianne Monteiro, Jacob~L. Menick, Sebastian Borgeaud, Andy
+  Brock, Aida Nematzadeh, Sahand Sharifzadeh, Miko{\l}aj Bi{\'n}kowski, Ricardo
+  Barreira, Oriol Vinyals, Andrew Zisserman, and Kar{\'e}n Simonyan.
+\newblock Flamingo: a visual language model for few-shot learning.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS
+  2022)}, 2022.
+
+\bibitem{bahdanau2015neural}
+Dzmitry Bahdanau, Kyunghyun Cho, and Yere Yere.
+\newblock Neural machine translation by jointly learning to align and
+  translate.
+\newblock {\em ArXiv}, 1409, 09 2014.
+
+\bibitem{beltagy_longformer_2020}
+Iz~Beltagy, Matthew Peters, and Arman Cohan.
+\newblock Longformer: The long-document transformer, 04 2020.
+
 \bibitem{carlini_diffusion}
 Nicholas Carlini, Jamie Hayes, Milad Nasr, Matthew Jagielski, Vikash Sehwag,
   Florian Tramer, Borja Balle, Daphne Ippolito, and Eric Wallace.
@@ -7,36 +28,219 @@ Nicholas Carlini, Jamie Hayes, Milad Nasr, Matthew Jagielski, Vikash Sehwag,
 \newblock In {\em 32nd USENIX Security Symposium (USENIX Security 23)}, pages
   5253--5270. USENIX Association, 2023.
 
+\bibitem{choromanski_performer_2021}
+Krzysztof Choromanski, Valerii Likhosherstov, David Dohan, Xingyou Song,
+  Andreea Gane, Tamas Sarlos, Peter Hawkins, Jared Davis, Afroz Mohiuddin,
+  Lukasz Kaiser, David Belanger, Lucy Colwell, and Adrian Weller.
+\newblock Rethinking attention with performers.
+\newblock In {\em International Conference on Learning Representations (ICLR)},
+  2021.
+
+\bibitem{dascoli_convit_2021}
+St{\'e}phane d'Ascoli, Hugo Touvron, Matthew Leavitt, Ari Morcos, Giulio
+  Biroli, and Levent Sagun.
+\newblock Convit: Improving vision transformers with soft convolutional
+  inductive biases.
+\newblock In {\em Proceedings of the 38th International Conference on Machine
+  Learning (ICML)}, pages 2286--2296, 2021.
+
+\bibitem{dauphin_glu_2017}
+Yann~N. Dauphin, Angela Fan, Michael Auli, and David Grangier.
+\newblock Language modeling with gated convolutional networks.
+\newblock In {\em Proceedings of the 34th International Conference on Machine
+  Learning (ICML)}, pages 933--941, 2017.
+
+\bibitem{dempster_em_1977}
+Arthur~P. Dempster, Nan~M. Laird, and Donald~B. Rubin.
+\newblock Maximum likelihood from incomplete data via the {EM} algorithm.
+\newblock {\em Journal of the Royal Statistical Society: Series B},
+  39(1):1--38, 1977.
+
 \bibitem{patrol}
 Shiwei Ding, Lan Zhang, Miao Pan, and Xiaoyong Yuan.
-\newblock { PATROL: Privacy-Oriented Pruning for Collaborative Inference
-  Against Model Inversion Attacks }.
+\newblock Patrol: Privacy-oriented pruning for collaborative inference against
+  model inversion attacks.
 \newblock In {\em 2024 IEEE/CVF Winter Conference on Applications of Computer
-  Vision (WACV)}, pages 4704--4713, Los Alamitos, CA, USA, January 2024. IEEE
-  Computer Society.
+  Vision (WACV)}, pages 4704--4713, 2024.
+
+\bibitem{dosovitskiy_vit_2021}
+Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weissenborn,
+  Xiaohua Zhai, Thomas Unterthiner, Mostafa Dehghani, Matthias Minderer, Georg
+  Heigold, Sylvain Gelly, Jakob Uszkoreit, and Neil Houlsby.
+\newblock An image is worth 16x16 words: Transformers for image recognition at
+  scale, 2021.
+
+\bibitem{dosovitskiy_inverting_2016}
+Alexey Dosovitskiy and Thomas Brox.
+\newblock Inverting visual representations with convolutional networks.
+\newblock In {\em Proceedings of the IEEE Conference on Computer Vision and
+  Pattern Recognition (CVPR)}, pages 4829--4837, 2016.
 
 \bibitem{fredrikson_mi}
 Matt Fredrikson, Somesh Jha, and Thomas Ristenpart.
 \newblock Model inversion attacks that exploit confidence information and basic
   countermeasures.
 \newblock In {\em Proceedings of the 22nd ACM SIGSAC Conference on Computer and
-  Communications Security}, CCS '15, page 1322–1333, New York, NY, USA, 2015.
-  Association for Computing Machinery.
+  Communications Security (CCS '15)}, pages 1322--1333. Association for
+  Computing Machinery, 2015.
+
+\bibitem{gong_gan_defense_tifs23}
+Xueluan Gong, Ziyao Wang, Shuaike Li, Yanjiao Chen, and Qian Wang.
+\newblock A {GAN}-based defense framework against model inversion attacks.
+\newblock {\em IEEE Transactions on Information Forensics and Security},
+  18:4475--4487, 2023.
+
+\bibitem{goodfellow_gan_2014}
+Ian Goodfellow, Jean Pouget-Abadie, Mehdi Mirza, Bing Xu, David Warde-Farley,
+  Sherjil Ozair, Aaron Courville, and Yoshua Bengio.
+\newblock Generative adversarial nets.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS
+  2014)}, 2014.
+
+\bibitem{he_resnet_2016}
+Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun.
+\newblock Deep residual learning for image recognition.
+\newblock In {\em Proceedings of the IEEE Conference on Computer Vision and
+  Pattern Recognition}, pages 770--778, 2016.
+
+\bibitem{he_collab_mia_acsac19}
+Zecheng He, Tianwei Zhang, and Ruby~B. Lee.
+\newblock Model inversion attacks against collaborative inference.
+\newblock In {\em Proceedings of the 35th Annual Computer Security Applications
+  Conference (ACSAC '19)}, pages 148--162, 2019.
+
+\bibitem{he_edgecloud_iotj2020}
+Zecheng He, Tianwei Zhang, and Ruby~B. Lee.
+\newblock Attacking and protecting data privacy in edge--cloud collaborative
+  inference systems.
+\newblock {\em IEEE Internet of Things Journal}, 8(12):9706--9716, 2021.
 
 \bibitem{hitaj_gan_mi}
 Briland Hitaj, Giuseppe Ateniese, and Fernando Perez-Cruz.
 \newblock Deep models under the gan: Information leakage from collaborative
   deep learning.
 \newblock In {\em Proceedings of the 2017 ACM SIGSAC Conference on Computer and
-  Communications Security}, CCS '17, page 603–618, New York, NY, USA, 2017.
-  Association for Computing Machinery.
+  Communications Security (CCS '17)}, pages 603--618. Association for Computing
+  Machinery, 2017.
+
+\bibitem{hu_senet_2018}
+Jie Hu, Li~Shen, and Gang Sun.
+\newblock Squeeze-and-excitation networks.
+\newblock In {\em Proceedings of the IEEE Conference on Computer Vision and
+  Pattern Recognition (CVPR)}, pages 7132--7141, 2018.
+
+\bibitem{huang_densenet_2017}
+Gao Huang, Zhuang Liu, Laurens Van Der~Maaten, and Kilian~Q. Weinberger.
+\newblock Densely connected convolutional networks.
+\newblock In {\em Proceedings of the IEEE Conference on Computer Vision and
+  Pattern Recognition}, pages 4700--4708, 2017.
+
+\bibitem{psnr}
+Q.~Huynh-Thu and M.~Ghanbari.
+\newblock Scope of validity of psnr in image/video quality assessment.
+\newblock {\em Electronics Letters}, 44:800--801, 2008.
+
+\bibitem{ilse_gated_mil_2018}
+Maximilian Ilse, Jakub~M. Tomczak, and Max Welling.
+\newblock Attention-based deep multiple instance learning.
+\newblock In {\em Proceedings of the 35th International Conference on Machine
+  Learning (ICML)}, 2018.
+
+\bibitem{jaegle_perceiver_2021}
+Andrew Jaegle, Felix Gimeno, Andrew Brock, Andrew Zisserman, Oriol Vinyals, and
+  Jo{\~a}o Carreira.
+\newblock Perceiver: General perception with iterative attention.
+\newblock In {\em Proceedings of the 38th International Conference on Machine
+  Learning (ICML)}, pages 4651--4664, 2021.
 
 \bibitem{noise_arl}
 Jonghu Jeong, Minyong Cho, Philipp Benz, and Tae-hoon Kim.
 \newblock Noisy adversarial representation learning for effective and efficient
   image obfuscation.
 \newblock In {\em Proceedings of the Thirty-Ninth Conference on Uncertainty in
-  Artificial Intelligence}, UAI '23. JMLR.org, 2023.
+  Artificial Intelligence (UAI 2023)}, 2023.
+
+\bibitem{johnson_perceptual_2016}
+Justin Johnson, Alexandre Alahi, and Li~Fei-Fei.
+\newblock Perceptual losses for real-time style transfer and super-resolution.
+\newblock In {\em Proceedings of the European Conference on Computer Vision
+  (ECCV)}, pages 694--711, 2016.
+
+\bibitem{lee_set_transformer_2019}
+Juho Lee, Yoonho Lee, Jungtaek Kim, Adam~R. Kosiorek, Seungjin Choi, and
+  Yee~Whye Teh.
+\newblock Set transformer: A framework for attention-based
+  permutation-invariant neural networks.
+\newblock In {\em Proceedings of the 36th International Conference on Machine
+  Learning (ICML)}, pages 3744--3753, 2019.
+
+\bibitem{li_ressfl_cvprw22}
+Jingtao Li, Adnan~Siraj Rakin, Xing Chen, Zhezhi He, Deliang Fan, and Chaitali
+  Chakrabarti.
+\newblock Ressfl: A resistance transfer framework for defending model inversion
+  attack in split federated learning.
+\newblock In {\em Proceedings of the IEEE/CVF Conference on Computer Vision and
+  Pattern Recognition Workshops (CVPRW)}, pages 1913--1922, 2022.
+
+\bibitem{li_blip2_2023}
+Junnan Li, Dongxu Li, Caiming Xiong, and Steven C.~H. Hoi.
+\newblock {BLIP-2}: Bootstrapping language-image pre-training with frozen image
+  encoders and large language models.
+\newblock In {\em Proceedings of the 40th International Conference on Machine
+  Learning (ICML)}, 2023.
+
+\bibitem{li_albef_2021}
+Junnan Li, Ramprasaath~R. Selvaraju, Akhilesh Gotmare, Shafiq Joty, Caiming
+  Xiong, and Steven C.~H. Hoi.
+\newblock Align before fuse: Vision and language representation learning with
+  momentum distillation.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS
+  2021)}, 2021.
+
+\bibitem{liu_swin_2021}
+Ze~Liu, Yutong Lin, Yue Cao, Han Hu, Yixuan Wei, Zheng Zhang, Stephen Lin, and
+  Baining Guo.
+\newblock Swin transformer: Hierarchical vision transformer using shifted
+  windows.
+\newblock In {\em Proceedings of the IEEE/CVF International Conference on
+  Computer Vision (ICCV)}, pages 10012--10022, 2021.
+
+\bibitem{slot_attention}
+Francesco Locatello, Dirk Weissenborn, Thomas Unterthiner, Aravindh Mahendran,
+  Georg Heigold, Jakob Uszkoreit, Alexey Dosovitskiy, and Thomas Kipf.
+\newblock Object-centric learning with slot attention.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS
+  2020)}, 2020.
+
+\bibitem{loshchilov_hutter_2017}
+Ilya Loshchilov and Frank Hutter.
+\newblock {SGDR}: Stochastic gradient descent with warm restarts.
+\newblock 08 2016.
+
+\bibitem{lu_vilbert_2019}
+Jiasen Lu, Dhruv Batra, Devi Parikh, and Stefan Lee.
+\newblock Vilbert: Pretraining task-agnostic visiolinguistic representations
+  for vision-and-language tasks.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS
+  2019)}, 2019.
+
+\bibitem{luong_attn_2015}
+Minh-Thang Luong, Hieu Pham, and Christopher~D. Manning.
+\newblock Effective approaches to attention-based neural machine translation.
+\newblock In {\em Proceedings of the 2015 Conference on Empirical Methods in
+  Natural Language Processing (EMNLP)}, pages 1412--1421, 2015.
+
+\bibitem{mahendran_inversion_2015}
+Aravindh Mahendran and Andrea Vedaldi.
+\newblock Understanding deep image representations by inverting them.
+\newblock In {\em Proceedings of the IEEE Conference on Computer Vision and
+  Pattern Recognition (CVPR)}, pages 5188--5196, 2015.
+
+\bibitem{Martin2019TraditionalAH}
+Charles~H. Martin and Michael~W. Mahoney.
+\newblock Traditional and heavy-tailed self regularization in neural network
+  models.
+\newblock {\em ArXiv}, abs/1901.08276, 2019.
 
 \bibitem{nasr_whitebox}
 Milad Nasr, Reza Shokri, and Amir Houmansadr.
@@ -45,19 +249,85 @@ Milad Nasr, Reza Shokri, and Amir Houmansadr.
 \newblock In {\em 2019 IEEE Symposium on Security and Privacy (SP)}, pages
   739--753, 2019.
 
+\bibitem{netzer_svhn_2011}
+Yuval Netzer, Tao Wang, Adam Coates, Alessandro Bissacco, Bo~Wu, and Andrew~Y.
+  Ng.
+\newblock Reading digits in natural images with unsupervised feature learning.
+\newblock In {\em NIPS Workshop on Deep Learning and Unsupervised Feature
+  Learning}, 2011.
+
+\bibitem{ng_facescrub_2014}
+Hong-Wei Ng and Stefan Winkler.
+\newblock A data-driven approach to cleaning large face datasets.
+\newblock In {\em 2014 IEEE International Conference on Image Processing
+  (ICIP)}, pages 343--347, 2014.
+
+\bibitem{shlezinger_edge_ensemble}
+Nir Shlezinger, Erez Farhan, Hai Morgenstern, and Yonina~C. Eldar.
+\newblock Collaborative inference via ensembles on the edge.
+\newblock In {\em ICASSP 2021 - 2021 IEEE International Conference on
+  Acoustics, Speech and Signal Processing (ICASSP)}, pages 8478--8482, 2021.
+
+\bibitem{simonyan_vgg_2015}
+Karen Simonyan and Andrew Zisserman.
+\newblock Very deep convolutional networks for large-scale image recognition.
+\newblock {\em arXiv 1409.1556}, 09 2014.
+
 \bibitem{srivastava_dropout}
 Nitish Srivastava, Geoffrey Hinton, Alex Krizhevsky, Ilya Sutskever, and Ruslan
   Salakhutdinov.
 \newblock Dropout: a simple way to prevent neural networks from overfitting.
-\newblock {\em J. Mach. Learn. Res.}, 15(1):1929–1958, January 2014.
+\newblock {\em Journal of Machine Learning Research}, 15(1):1929--1958, 2014.
+
+\bibitem{tan_lxmert_2019}
+Hao Tan and Mohit Bansal.
+\newblock Lxmert: Learning cross-modality encoder representations from
+  transformers.
+\newblock In {\em Proceedings of the 2019 Conference on Empirical Methods in
+  Natural Language Processing (EMNLP-IJCNLP)}, pages 5100--5111, 2019.
+
+\bibitem{thapa_splitfed}
+Chandra Thapa, M.~A.~P. Chamikara, Seyit Camtepe, and Lichao Sun.
+\newblock Splitfed: When federated learning meets split learning, 2022.
+
+\bibitem{vaswani_attention_2017}
+Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones,
+  Aidan~N. Gomez, {\L}ukasz Kaiser, and Illia Polosukhin.
+\newblock Attention is all you need, 2017.
+
+\bibitem{vepakomma_splitnn}
+Praneeth Vepakomma, Otkrist Gupta, Tristan Swedish, and Ramesh Raskar.
+\newblock Split learning for health: Distributed deep learning without sharing
+  raw patient data, 2018.
 
 \bibitem{distcorr}
 Praneeth Vepakomma, Abhishek Singh, Otkrist Gupta, and Ramesh Raskar.
-\newblock { NoPeek: Information leakage reduction to share activations in
-  distributed deep learning }.
+\newblock Nopeek: Information leakage reduction to share activations in
+  distributed deep learning.
 \newblock In {\em 2020 International Conference on Data Mining Workshops
-  (ICDMW)}, pages 933--942, Los Alamitos, CA, USA, November 2020. IEEE Computer
-  Society.
+  (ICDMW)}, pages 933--942, 2020.
+
+\bibitem{wang_linformer_2020}
+Sinong Wang, Belinda~Z. Li, Madian Khabsa, Han Fang, and Hao Ma.
+\newblock Linformer: Self-attention with linear complexity, 2020.
+
+\bibitem{wang_nonlocal_2018}
+Xiaolong Wang, Ross Girshick, Abhinav Gupta, and Kaiming He.
+\newblock Non-local neural networks.
+\newblock In {\em Proceedings of the IEEE Conference on Computer Vision and
+  Pattern Recognition (CVPR)}, pages 7794--7803, 2018.
+
+\bibitem{wang_bovik_ssim_2004}
+Zhou Wang, Alan~C. Bovik, Hamid~R. Sheikh, and Eero~P. Simoncelli.
+\newblock Image quality assessment: from error visibility to structural
+  similarity.
+\newblock {\em IEEE Transactions on Image Processing}, 13(4):600--612, 2004.
+
+\bibitem{woo_cbam_2018}
+Sanghyun Woo, Jongchan Park, Joon-Young Lee, and In~So Kweon.
+\newblock Cbam: Convolutional block attention module.
+\newblock In {\em Proceedings of the European Conference on Computer Vision
+  (ECCV)}, 2018.
 
 \bibitem{cem}
 Song Xia, Yi~Yu, Wenhan Yang, Meiwen Ding, Zhuo Chen, Ling-Yu Duan, Alex~C.
@@ -65,8 +335,19 @@ Song Xia, Yi~Yu, Wenhan Yang, Meiwen Ding, Zhuo Chen, Ling-Yu Duan, Alex~C.
 \newblock Theoretical insights in model inversion robustness and conditional
   entropy maximization for collaborative inference systems, 2025.
 
+\bibitem{zaheer_bigbird_2020}
+Manzil Zaheer, Guru Guruganesh, Avinava Dubey, Joshua Ainslie, Chris Alberti,
+  Santiago Onta{\~n}{\'o}n, Philip Pham, Anirudh Ravula, Qifan Wang, Li~Yang,
+  and Amr Ahmed.
+\newblock Big bird: Transformers for longer sequences.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS
+  2020)}, 2020.
+
 \bibitem{zhu_dlg}
 Ligeng Zhu, Zhijian Liu, and Song Han.
-\newblock Deep leakage from gradients, 2019.
+\newblock Deep leakage from gradients.
+\newblock In H.~Wallach, H.~Larochelle, A.~Beygelzimer, F.~d\textquotesingle
+  Alch\'{e}-Buc, E.~Fox, and R.~Garnett, editors, {\em Advances in Neural
+  Information Processing Systems}, volume~32. Curran Associates, Inc., 2019.
 
 \end{thebibliography}

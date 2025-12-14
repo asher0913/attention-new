@@ -1,197 +1,518 @@
 @misc{cem,
-      title={Theoretical Insights in Model Inversion Robustness and Conditional Entropy Maximization for Collaborative Inference Systems}, 
-      author={Song Xia and Yi Yu and Wenhan Yang and Meiwen Ding and Zhuo Chen and Ling-Yu Duan and Alex C. Kot and Xudong Jiang},
-      year={2025},
-      eprint={2503.00383},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG},
-      url={https://arxiv.org/abs/2503.00383}, 
+	title         = {Theoretical Insights in Model Inversion Robustness and Conditional Entropy Maximization for Collaborative Inference Systems},
+	author        = {Xia, Song and Yu, Yi and Yang, Wenhan and Ding, Meiwen and Chen, Zhuo and Duan, Ling-Yu and Kot, Alex C. and Jiang, Xudong},
+	year          = {2025},
+	eprint        = {2503.00383},
+	archivePrefix = {arXiv},
+	primaryClass  = {cs.LG},
+	url           = {https://arxiv.org/abs/2503.00383}
 }
-@article{vepakomma_splitnn,
-  title={Split learning for health: Distributed deep learning without sharing raw patient data},
-  author={Praneeth Vepakomma and Otkrist Gupta and Tristan Swedish and Ramesh Raskar},
-  journal={ArXiv},
-  year={2018},
-  volume={abs/1812.00564},
-  url={https://api.semanticscholar.org/CorpusID:54439509}
+
+@misc{vepakomma_splitnn,
+	title         = {Split learning for health: Distributed deep learning without sharing raw patient data},
+	author        = {Vepakomma, Praneeth and Gupta, Otkrist and Swedish, Tristan and Raskar, Ramesh},
+	year          = {2018},
+	eprint        = {1812.00564},
+	archivePrefix = {arXiv},
+	primaryClass  = {cs.LG},
+	url           = {https://arxiv.org/abs/1812.00564}
 }
 
 @misc{thapa_splitfed,
-      title={SplitFed: When Federated Learning Meets Split Learning}, 
-      author={Chandra Thapa and M. A. P. Chamikara and Seyit Camtepe and Lichao Sun},
-      year={2022},
-      eprint={2004.12088},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG},
-      url={https://arxiv.org/abs/2004.12088}, 
+	title         = {SplitFed: When Federated Learning Meets Split Learning},
+	author        = {Thapa, Chandra and Chamikara, M. A. P. and Camtepe, Seyit and Sun, Lichao},
+	year          = {2022},
+	eprint        = {2004.12088},
+	archivePrefix = {arXiv},
+	primaryClass  = {cs.LG},
+	url           = {https://arxiv.org/abs/2004.12088}
 }
-@INPROCEEDINGS{shlezinger_edge_ensemble,
-  author={Shlezinger, Nir and Farhan, Erez and Morgenstern, Hai and Eldar, Yonina C.},
-  booktitle={ICASSP 2021 - 2021 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}, 
-  title={Collaborative Inference via Ensembles on the Edge}, 
-  year={2021},
-  volume={},
-  number={},
-  pages={8478-8482},
-  keywords={Performance evaluation;Conferences;Neural networks;Collaboration;Signal processing;Delays;Artificial intelligence;Edge computing;deep ensembles;neural networks},
-  doi={10.1109/ICASSP39728.2021.9414740}}
+
+@inproceedings{shlezinger_edge_ensemble,
+	author    = {Shlezinger, Nir and Farhan, Erez and Morgenstern, Hai and Eldar, Yonina C.},
+	title     = {Collaborative Inference via Ensembles on the Edge},
+	booktitle = {ICASSP 2021 - 2021 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)},
+	year      = {2021},
+	pages     = {8478--8482},
+	doi       = {10.1109/ICASSP39728.2021.9414740},
+	url       = {https://doi.org/10.1109/ICASSP39728.2021.9414740}
+}
 
 @inproceedings{fredrikson_mi,
-author = {Fredrikson, Matt and Jha, Somesh and Ristenpart, Thomas},
-title = {Model Inversion Attacks that Exploit Confidence Information and Basic Countermeasures},
-year = {2015},
-isbn = {9781450338325},
-publisher = {Association for Computing Machinery},
-address = {New York, NY, USA},
-url = {https://doi.org/10.1145/2810103.2813677},
-doi = {10.1145/2810103.2813677},
-abstract = {Machine-learning (ML) algorithms are increasingly utilized in privacy-sensitive applications such as predicting lifestyle choices, making medical diagnoses, and facial recognition. In a model inversion attack, recently introduced in a case study of linear classifiers in personalized medicine by Fredrikson et al., adversarial access to an ML model is abused to learn sensitive genomic information about individuals. Whether model inversion attacks apply to settings outside theirs, however, is unknown. We develop a new class of model inversion attack that exploits confidence values revealed along with predictions. Our new attacks are applicable in a variety of settings, and we explore two in depth: decision trees for lifestyle surveys as used on machine-learning-as-a-service systems and neural networks for facial recognition. In both cases confidence values are revealed to those with the ability to make prediction queries to models. We experimentally show attacks that are able to estimate whether a respondent in a lifestyle survey admitted to cheating on their significant other and, in the other context, show how to recover recognizable images of people's faces given only their name and access to the ML model. We also initiate experimental exploration of natural countermeasures, investigating a privacy-aware decision tree training algorithm that is a simple variant of CART learning, as well as revealing only rounded confidence values. The lesson that emerges is that one can avoid these kinds of MI attacks with negligible degradation to utility.},
-booktitle = {Proceedings of the 22nd ACM SIGSAC Conference on Computer and Communications Security},
-pages = {1322–1333},
-numpages = {12},
-keywords = {attacks, machine learning, privacy},
-location = {Denver, Colorado, USA},
-series = {CCS '15}
+	author    = {Fredrikson, Matt and Jha, Somesh and Ristenpart, Thomas},
+	title     = {Model Inversion Attacks that Exploit Confidence Information and Basic Countermeasures},
+	booktitle = {Proceedings of the 22nd ACM SIGSAC Conference on Computer and Communications Security (CCS '15)},
+	year      = {2015},
+	pages     = {1322--1333},
+	publisher = {Association for Computing Machinery},
+	doi       = {10.1145/2810103.2813677},
+	url       = {https://doi.org/10.1145/2810103.2813677}
 }
 
 @inproceedings{hitaj_gan_mi,
-author = {Hitaj, Briland and Ateniese, Giuseppe and Perez-Cruz, Fernando},
-title = {Deep Models Under the GAN: Information Leakage from Collaborative Deep Learning},
-year = {2017},
-isbn = {9781450349468},
-publisher = {Association for Computing Machinery},
-address = {New York, NY, USA},
-url = {https://doi.org/10.1145/3133956.3134012},
-doi = {10.1145/3133956.3134012},
-abstract = {Deep Learning has recently become hugely popular in machine learning for its ability to solve end-to-end learning systems, in which the features and the classifiers are learned simultaneously, providing significant improvements in classification accuracy in the presence of highly-structured and large databases.Its success is due to a combination of recent algorithmic breakthroughs, increasingly powerful computers, and access to significant amounts of data.Researchers have also considered privacy implications of deep learning. Models are typically trained in a centralized manner with all the data being processed by the same training algorithm. If the data is a collection of users' private data, including habits, personal pictures, geographical positions, interests, and more, the centralized server will have access to sensitive information that could potentially be mishandled. To tackle this problem, collaborative deep learning models have recently been proposed where parties locally train their deep learning structures and only share a subset of the parameters in the attempt to keep their respective training sets private. Parameters can also be obfuscated via differential privacy (DP) to make information extraction even more challenging, as proposed by Shokri and Shmatikov at CCS'15.Unfortunately, we show that any privacy-preserving collaborative deep learning is susceptible to a powerful attack that we devise in this paper. In particular, we show that a distributed, federated, or decentralized deep learning approach is fundamentally broken and does not protect the training sets of honest participants. The attack we developed exploits the real-time nature of the learning process that allows the adversary to train a Generative Adversarial Network (GAN) that generates prototypical samples of the targeted training set that was meant to be private (the samples generated by the GAN are intended to come from the same distribution as the training data). Interestingly, we show that record-level differential privacy applied to the shared parameters of the model, as suggested in previous work, is ineffective (i.e., record-level DP is not designed to address our attack).},
-booktitle = {Proceedings of the 2017 ACM SIGSAC Conference on Computer and Communications Security},
-pages = {603–618},
-numpages = {16},
-keywords = {collaborative learning, deep learning, privacy, security},
-location = {Dallas, Texas, USA},
-series = {CCS '17}
+	author    = {Hitaj, Briland and Ateniese, Giuseppe and Perez-Cruz, Fernando},
+	title     = {Deep Models Under the GAN: Information Leakage from Collaborative Deep Learning},
+	booktitle = {Proceedings of the 2017 ACM SIGSAC Conference on Computer and Communications Security (CCS '17)},
+	year      = {2017},
+	pages     = {603--618},
+	publisher = {Association for Computing Machinery},
+	doi       = {10.1145/3133956.3134012},
+	url       = {https://doi.org/10.1145/3133956.3134012}
 }
 
 @inproceedings{noise_arl,
-author = {Jeong, Jonghu and Cho, Minyong and Benz, Philipp and Kim, Tae-hoon},
-title = {Noisy adversarial representation learning for effective and efficient image obfuscation},
-year = {2023},
-publisher = {JMLR.org},
-abstract = {Recent real-world applications of deep learning have led to the development of machine learning as a service (MLaaS). However, the scenario of client-server inference presents privacy concerns, where the server processes raw data sent from the user's client device. One solution to this issue is to provide an obfuscator function to the client device using Adversarial Representation Learning (ARL). Prior works have primarily focused on the privacy-utility trade-off while overlooking the computational cost and memory burden on the client side. In this paper, we propose an effective and efficient ARL method that incorporates feature noise into the ARL pipeline. We evaluated our approach on various datasets, comparing it with state-of-the-art ARL techniques. Our experimental results indicate that our method achieves better accuracy, lower computation and memory overheads, and improved resistance to information leakage and reconstruction attacks.},
-booktitle = {Proceedings of the Thirty-Ninth Conference on Uncertainty in Artificial Intelligence},
-articleno = {90},
-numpages = {10},
-location = {Pittsburgh, PA, USA},
-series = {UAI '23}
+	author    = {Jeong, Jonghu and Cho, Minyong and Benz, Philipp and Kim, Tae-hoon},
+	title     = {Noisy Adversarial Representation Learning for Effective and Efficient Image Obfuscation},
+	booktitle = {Proceedings of the Thirty-Ninth Conference on Uncertainty in Artificial Intelligence (UAI 2023)},
+	year      = {2023},
+	url       = {https://openreview.net/forum?id=wohFfQWsRxn}
 }
 
-@INPROCEEDINGS {patrol,
-author = { Ding, Shiwei and Zhang, Lan and Pan, Miao and Yuan, Xiaoyong },
-booktitle = { 2024 IEEE/CVF Winter Conference on Applications of Computer Vision (WACV) },
-title = {{ PATROL: Privacy-Oriented Pruning for Collaborative Inference Against Model Inversion Attacks }},
-year = {2024},
-volume = {},
-ISSN = {},
-pages = {4704-4713},
-abstract = { Collaborative inference has been a promising solution to enable resource-constrained edge devices to perform inference using state-of-the-art deep neural networks (DNNs). In collaborative inference, the edge device first feeds the input to a partial DNN locally and then uploads the intermediate result to the cloud to complete the inference. However, recent research indicates model inversion attacks (MIAs) can reconstruct input data from intermediate results, posing serious privacy concerns for collaborative inference. Existing perturbation and cryptography techniques are inefficient and unreliable in defending against MIAs while performing accurate inference. This paper provides a viable solution, named PATROL, which develops privacy-oriented pruning to balance privacy, efficiency, and utility of collaborative inference. PATROL takes advantage of the fact that later layers in a DNN can extract more task-specific features. Given limited local resources for collaborative inference, PATROL intends to deploy more layers at the edge based on pruning techniques to enforce task-specific features for inference and reduce task-irrelevant but sensitive features for privacy preservation. To achieve privacy-oriented pruning, PATROL introduces two key components: Lipschitz regularization and adversarial reconstruction training, which increase the reconstruction errors by reducing the stability of MIAs and enhance the target inference model by adversarial training, respectively. On a real-world collaborative inference task, vehicle re-identification, we demonstrate the superior performance of PATROL in terms of against MIAs. },
-keywords = {Training;Performance evaluation;Privacy;Perturbation methods;Collaboration;Artificial neural networks;Feature extraction},
-doi = {10.1109/WACV57701.2024.00465},
-url = {https://doi.ieeecomputersociety.org/10.1109/WACV57701.2024.00465},
-publisher = {IEEE Computer Society},
-address = {Los Alamitos, CA, USA},
-month =Jan}
+@inproceedings{patrol,
+	author    = {Ding, Shiwei and Zhang, Lan and Pan, Miao and Yuan, Xiaoyong},
+	title     = {PATROL: Privacy-Oriented Pruning for Collaborative Inference Against Model Inversion Attacks},
+	booktitle = {2024 IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)},
+	year      = {2024},
+	pages     = {4704--4713},
+	doi       = {10.1109/WACV57701.2024.00465},
+	url       = {https://doi.org/10.1109/WACV57701.2024.00465}
+}
 
-
-@INPROCEEDINGS {distcorr,
-author = { Vepakomma, Praneeth and Singh, Abhishek and Gupta, Otkrist and Raskar, Ramesh },
-booktitle = { 2020 International Conference on Data Mining Workshops (ICDMW) },
-title = {{ NoPeek: Information leakage reduction to share activations in distributed deep learning }},
-year = {2020},
-volume = {},
-ISSN = {},
-pages = {933-942},
-abstract = { For distributed machine learning with sensitive data, we demonstrate how minimizing distance correlation between raw data and intermediary representations reduces leakage of sensitive raw data patterns across client communications while maintaining model accuracy. Leakage (measured using distance correlation between input and intermediate representations) is the risk associated with the invertibility of raw data from intermediary representations. This can prevent client entities that hold sensitive data from using distributed deep learning services. We demonstrate that our method is resilient to such reconstruction attacks and is based on reduction of distance correlation between raw data and learned representations during training and inference with image datasets. We prevent such reconstruction of raw data while maintaining information required to sustain good classification accuracies. },
-keywords = {Deep learning;Training;Privacy;Correlation;Distributed databases;Image reconstruction;Visual perception},
-doi = {10.1109/ICDMW51313.2020.00134},
-url = {https://doi.ieeecomputersociety.org/10.1109/ICDMW51313.2020.00134},
-publisher = {IEEE Computer Society},
-address = {Los Alamitos, CA, USA},
-month =Nov}
-
+@inproceedings{distcorr,
+	author    = {Vepakomma, Praneeth and Singh, Abhishek and Gupta, Otkrist and Raskar, Ramesh},
+	title     = {NoPeek: Information Leakage Reduction to Share Activations in Distributed Deep Learning},
+	booktitle = {2020 International Conference on Data Mining Workshops (ICDMW)},
+	year      = {2020},
+	pages     = {933--942},
+	doi       = {10.1109/ICDMW51313.2020.00134},
+	url       = {https://doi.org/10.1109/ICDMW51313.2020.00134}
+}
 
 @article{srivastava_dropout,
-author = {Srivastava, Nitish and Hinton, Geoffrey and Krizhevsky, Alex and Sutskever, Ilya and Salakhutdinov, Ruslan},
-title = {Dropout: a simple way to prevent neural networks from overfitting},
-year = {2014},
-issue_date = {January 2014},
-publisher = {JMLR.org},
-volume = {15},
-number = {1},
-issn = {1532-4435},
-abstract = {Deep neural nets with a large number of parameters are very powerful machine learning systems. However, overfitting is a serious problem in such networks. Large networks are also slow to use, making it difficult to deal with overfitting by combining the predictions of many different large neural nets at test time. Dropout is a technique for addressing this problem. The key idea is to randomly drop units (along with their connections) from the neural network during training. This prevents units from co-adapting too much. During training, dropout samples from an exponential number of different "thinned" networks. At test time, it is easy to approximate the effect of averaging the predictions of all these thinned networks by simply using a single unthinned network that has smaller weights. This significantly reduces overfitting and gives major improvements over other regularization methods. We show that dropout improves the performance of neural networks on supervised learning tasks in vision, speech recognition, document classification and computational biology, obtaining state-of-the-art results on many benchmark data sets.},
-journal = {J. Mach. Learn. Res.},
-month = jan,
-pages = {1929–1958},
-numpages = {30},
-keywords = {deep learning, model combination, neural networks, regularization}
+	author  = {Srivastava, Nitish and Hinton, Geoffrey and Krizhevsky, Alex and Sutskever, Ilya and Salakhutdinov, Ruslan},
+	title   = {Dropout: a simple way to prevent neural networks from overfitting},
+	journal = {Journal of Machine Learning Research},
+	year    = {2014},
+	volume  = {15},
+	number  = {1},
+	pages   = {1929--1958},
+	url     = {https://www.jmlr.org/papers/v15/srivastava14a.html}
 }
 
 @inproceedings{slot_attention,
-author = {Locatello, Francesco and Weissenborn, Dirk and Unterthiner, Thomas and Mahendran, Aravindh and Heigold, Georg and Uszkoreit, Jakob and Dosovitskiy, Alexey and Kipf, Thomas},
-title = {Object-centric learning with slot attention},
-year = {2020},
-isbn = {9781713829546},
-publisher = {Curran Associates Inc.},
-address = {Red Hook, NY, USA},
-abstract = {Learning object-centric representations of complex scenes is a promising step towards enabling efficient abstract reasoning from low-level perceptual features. Yet, most deep learning approaches learn distributed representations that do not capture the compositional properties of natural scenes. In this paper, we present the Slot Attention module, an architectural component that interfaces with perceptual representations such as the output of a convolutional neural network and produces a set of task-dependent abstract representations which we call slots. These slots are exchangeable and can bind to any object in the input by specializing through a competitive procedure over multiple rounds of attention. We empirically demonstrate that Slot Attention can extract object-centric representations that enable generalization to unseen compositions when trained on unsupervised object discovery and supervised property prediction tasks.},
-booktitle = {Proceedings of the 34th International Conference on Neural Information Processing Systems},
-articleno = {967},
-numpages = {14},
-location = {Vancouver, BC, Canada},
-series = {NIPS '20}
+	author    = {Locatello, Francesco and Weissenborn, Dirk and Unterthiner, Thomas and Mahendran, Aravindh and Heigold, Georg and Uszkoreit, Jakob and Dosovitskiy, Alexey and Kipf, Thomas},
+	title     = {Object-centric learning with slot attention},
+	booktitle = {Advances in Neural Information Processing Systems (NeurIPS 2020)},
+	year      = {2020},
+	url       = {https://proceedings.neurips.cc/}
 }
 
-flamingo
 @inproceedings{flamingo,
-author = {Alayrac, Jean-Baptiste and Donahue, Jeff and Luc, Pauline and Miech, Antoine and Barr, Iain and Hasson, Yana and Lenc, Karel and Mensch, Arthur and Millicah, Katie and Reynolds, Malcolm and Ring, Roman and Rutherford, Eliza and Cabi, Serkan and Han, Tengda and Gong, Zhitao and Samangooei, Sina and Monteiro, Marianne and Menick, Jacob and Borgeaud, Sebastian and Brock, Andrew and Nematzadeh, Aida and Sharifzadeh, Sahand and Binkowski, Mikolaj and Barreira, Ricardo and Vinyals, Oriol and Zisserman, Andrew and Simonyan, Karen},
-title = {Flamingo: a visual language model for few-shot learning},
-year = {2022},
-isbn = {9781713871088},
-publisher = {Curran Associates Inc.},
-address = {Red Hook, NY, USA},
-abstract = {Building models that can be rapidly adapted to novel tasks using only a handful of annotated examples is an open challenge for multimodal machine learning research. We introduce Flamingo, a family of Visual Language Models (VLM) with this ability. We propose key architectural innovations to: (i) bridge powerful pretrained vision-only and language-only models, (ii) handle sequences of arbitrarily interleaved visual and textual data, and (iii) seamlessly ingest images or videos as inputs. Thanks to their flexibility, Flamingo models can be trained on large-scale multimodal web corpora containing arbitrarily interleaved text and images, which is key to endow them with in-context few-shot learning capabilities. We perform a thorough evaluation of our models, exploring and measuring their ability to rapidly adapt to a variety of image and video tasks. These include open-ended tasks such as visual question-answering, where the model is prompted with a question which it has to answer; captioning tasks, which evaluate the ability to describe a scene or an event; and close-ended tasks such as multiple-choice visual question-answering. For tasks lying anywhere on this spectrum, a single Flamingo model can achieve a new state of the art with few-shot learning, simply by prompting the model with task-specific examples. On numerous benchmarks, Flamingo outperforms models fine-tuned on thousands of times more task-specific data.},
-booktitle = {Proceedings of the 36th International Conference on Neural Information Processing Systems},
-articleno = {1723},
-numpages = {21},
-location = {New Orleans, LA, USA},
-series = {NIPS '22}
+	author    = {Alayrac, Jean-Baptiste and Donahue, Jeff and Luc, Pauline and Miech, Antoine and Barr, Iain and Hasson, Yana and Lenc, Karel and Mensch, Arthur and Millican, Katherine and Reynolds, Malcolm and Ring, Roman and Rutherford, Eliza and Cabi, Serkan and Han, Tengda and Gong, Zhitao and Samangooei, Sina and Monteiro, Marianne and Menick, Jacob L. and Borgeaud, Sebastian and Brock, Andy and Nematzadeh, Aida and Sharifzadeh, Sahand and Bi{\'n}kowski, Miko{\l}aj and Barreira, Ricardo and Vinyals, Oriol and Zisserman, Andrew and Simonyan, Kar{\'e}n},
+	title     = {Flamingo: a Visual Language Model for Few-Shot Learning},
+	booktitle = {Advances in Neural Information Processing Systems (NeurIPS 2022)},
+	year      = {2022},
+	url       = {https://proceedings.neurips.cc/paper_files/paper/2022/hash/960a172bc7fbf0177ccccbb411a7d800-Abstract-Conference.html}
 }
 
-% -------------------- added for interim report --------------------
-@INPROCEEDINGS{nasr_whitebox,
-  author={Nasr, Milad and Shokri, Reza and Houmansadr, Amir},
-  booktitle={2019 IEEE Symposium on Security and Privacy (SP)}, 
-  title={Comprehensive Privacy Analysis of Deep Learning: Passive and Active White-box Inference Attacks against Centralized and Federated Learning}, 
-  year={2019},
-  pages={739-753},
-  doi={10.1109/SP.2019.00065}
+@inproceedings{nasr_whitebox,
+	author    = {Nasr, Milad and Shokri, Reza and Houmansadr, Amir},
+	title     = {Comprehensive Privacy Analysis of Deep Learning: Passive and Active White-box Inference Attacks against Centralized and Federated Learning},
+	booktitle = {2019 IEEE Symposium on Security and Privacy (SP)},
+	year      = {2019},
+	pages     = {739--753},
+	doi       = {10.1109/SP.2019.00065},
+	url       = {https://doi.org/10.1109/SP.2019.00065}
 }
 
-@misc{zhu_dlg,
-  title={Deep Leakage from Gradients}, 
-  author={Ligeng Zhu and Zhijian Liu and Song Han},
-  year={2019},
-  eprint={1906.08935},
-  archivePrefix={arXiv},
-  primaryClass={cs.LG}
+@inproceedings{zhu_dlg,
+	author = {Zhu, Ligeng and Liu, Zhijian and Han, Song},
+	booktitle = {Advances in Neural Information Processing Systems},
+	editor = {H. Wallach and H. Larochelle and A. Beygelzimer and F. d\textquotesingle Alch\'{e}-Buc and E. Fox and R. Garnett},
+	pages = {},
+	publisher = {Curran Associates, Inc.},
+	title = {Deep Leakage from Gradients},
+	url = {https://proceedings.neurips.cc/paper_files/paper/2019/file/60a6c4002cc7b29142def8871531281a-Paper.pdf},
+	volume = {32},
+	year = {2019}
 }
 
 @inproceedings{carlini_diffusion,
-  author = {Carlini, Nicholas and Hayes, Jamie and Nasr, Milad and Jagielski, Matthew and Sehwag, Vikash and Tramer, Florian and Balle, Borja and Ippolito, Daphne and Wallace, Eric},
-  title = {Extracting Training Data from Diffusion Models},
-  booktitle = {32nd USENIX Security Symposium (USENIX Security 23)},
-  year = {2023},
-  pages = {5253--5270},
-  url = {https://www.usenix.org/conference/usenixsecurity23/presentation/carlini-extracting},
-  publisher = {USENIX Association}
+	author    = {Carlini, Nicholas and Hayes, Jamie and Nasr, Milad and Jagielski, Matthew and Sehwag, Vikash and Tramer, Florian and Balle, Borja and Ippolito, Daphne and Wallace, Eric},
+	title     = {Extracting Training Data from Diffusion Models},
+	booktitle = {32nd USENIX Security Symposium (USENIX Security 23)},
+	year      = {2023},
+	pages     = {5253--5270},
+	publisher = {USENIX Association},
+	url       = {https://www.usenix.org/conference/usenixsecurity23/presentation/carlini-extracting}
+}
+
+@inproceedings{mahendran_inversion_2015,
+	author    = {Mahendran, Aravindh and Vedaldi, Andrea},
+	title     = {Understanding deep image representations by inverting them},
+	booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+	year      = {2015},
+	pages     = {5188--5196},
+	doi       = {10.1109/CVPR.2015.7299155},
+	url       = {https://doi.org/10.1109/CVPR.2015.7299155}
+}
+
+@inproceedings{dosovitskiy_inverting_2016,
+	author    = {Dosovitskiy, Alexey and Brox, Thomas},
+	title     = {Inverting visual representations with convolutional networks},
+	booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+	year      = {2016},
+	pages     = {4829--4837},
+	doi       = {10.1109/CVPR.2016.522},
+	url       = {https://doi.org/10.1109/CVPR.2016.522}
+}
+
+
+@article{bahdanau2015neural,
+	author = {Bahdanau, Dzmitry and Cho, Kyunghyun and Yere, Yere},
+	year = {2014},
+	month = {09},
+	pages = {},
+	title = {Neural Machine Translation by Jointly Learning to Align and Translate},
+	volume = {1409},
+	journal = {ArXiv}
+}
+@misc{vaswani_attention_2017,
+	title         = {Attention Is All You Need},
+	author        = {Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N. and Kaiser, {\L}ukasz and Polosukhin, Illia},
+	year          = {2017},
+	eprint        = {1706.03762},
+	archivePrefix = {arXiv},
+	primaryClass  = {cs.CL},
+	url           = {https://arxiv.org/abs/1706.03762}
+}
+
+@inproceedings{ilse_gated_mil_2018,
+	author    = {Ilse, Maximilian and Tomczak, Jakub M. and Welling, Max},
+	title     = {Attention-based Deep Multiple Instance Learning},
+	booktitle = {Proceedings of the 35th International Conference on Machine Learning (ICML)},
+	year      = {2018},
+	url       = {https://proceedings.mlr.press/v80/ilse18a.html}
+}
+
+@inproceedings{luong_attn_2015,
+	author    = {Luong, Minh-Thang and Pham, Hieu and Manning, Christopher D.},
+	title     = {Effective Approaches to Attention-based Neural Machine Translation},
+	booktitle = {Proceedings of the 2015 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+	year      = {2015},
+	pages     = {1412--1421},
+	doi       = {10.18653/v1/D15-1166},
+	url       = {https://doi.org/10.18653/v1/D15-1166}
+}
+
+@inproceedings{he_collab_mia_acsac19,
+	author    = {He, Zecheng and Zhang, Tianwei and Lee, Ruby B.},
+	title     = {Model Inversion Attacks Against Collaborative Inference},
+	booktitle = {Proceedings of the 35th Annual Computer Security Applications Conference (ACSAC '19)},
+	year      = {2019},
+	pages     = {148--162},
+	doi       = {10.1145/3359789.3359835},
+	url       = {https://doi.org/10.1145/3359789.3359835}
+}
+
+@article{he_edgecloud_iotj2020,
+	author  = {He, Zecheng and Zhang, Tianwei and Lee, Ruby B.},
+	title   = {Attacking and Protecting Data Privacy in Edge--Cloud Collaborative Inference Systems},
+	journal = {IEEE Internet of Things Journal},
+	year    = {2021},
+	volume  = {8},
+	number  = {12},
+	pages   = {9706--9716},
+	doi     = {10.1109/JIOT.2020.3022358},
+	url     = {https://doi.org/10.1109/JIOT.2020.3022358}
+}
+
+@inproceedings{li_ressfl_cvprw22,
+	author    = {Li, Jingtao and Rakin, Adnan Siraj and Chen, Xing and He, Zhezhi and Fan, Deliang and Chakrabarti, Chaitali},
+	title     = {ResSFL: A Resistance Transfer Framework for Defending Model Inversion Attack in Split Federated Learning},
+	booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops (CVPRW)},
+	year      = {2022},
+	pages     = {1913--1922},
+	url       = {https://openaccess.thecvf.com/}
+}
+
+@article{gong_gan_defense_tifs23,
+	author  = {Gong, Xueluan and Wang, Ziyao and Li, Shuaike and Chen, Yanjiao and Wang, Qian},
+	title   = {A {GAN}-Based Defense Framework Against Model Inversion Attacks},
+	journal = {IEEE Transactions on Information Forensics and Security},
+	year    = {2023},
+	volume  = {18},
+	pages   = {4475--4487},
+	doi     = {10.1109/TIFS.2023.3295944},
+	url     = {https://doi.org/10.1109/TIFS.2023.3295944}
+}
+
+@misc{wang_linformer_2020,
+	title         = {Linformer: Self-Attention with Linear Complexity},
+	author        = {Wang, Sinong and Li, Belinda Z. and Khabsa, Madian and Fang, Han and Ma, Hao},
+	year          = {2020},
+	eprint        = {2006.04768},
+	archivePrefix = {arXiv},
+	primaryClass  = {cs.LG},
+	url           = {https://arxiv.org/abs/2006.04768}
+}
+
+@inproceedings{choromanski_performer_2021,
+	author    = {Choromanski, Krzysztof and Likhosherstov, Valerii and Dohan, David and Song, Xingyou and Gane, Andreea and Sarlos, Tamas and Hawkins, Peter and Davis, Jared and Mohiuddin, Afroz and Kaiser, Lukasz and Belanger, David and Colwell, Lucy and Weller, Adrian},
+	title     = {Rethinking Attention with Performers},
+	booktitle = {International Conference on Learning Representations (ICLR)},
+	year      = {2021},
+	url       = {https://arxiv.org/abs/2009.14794}
+}
+
+@unknown{beltagy_longformer_2020,
+	author = {Beltagy, Iz and Peters, Matthew and Cohan, Arman},
+	year = {2020},
+	month = {04},
+	pages = {},
+	title = {Longformer: The Long-Document Transformer},
+	doi = {10.48550/arXiv.2004.05150}
+}
+@inproceedings{zaheer_bigbird_2020,
+	author    = {Zaheer, Manzil and Guruganesh, Guru and Dubey, Avinava and Ainslie, Joshua and Alberti, Chris and Onta{\~n}{\'o}n, Santiago and Pham, Philip and Ravula, Anirudh and Wang, Qifan and Yang, Li and Ahmed, Amr},
+	title     = {Big Bird: Transformers for Longer Sequences},
+	booktitle = {Advances in Neural Information Processing Systems (NeurIPS 2020)},
+	year      = {2020},
+	url       = {https://arxiv.org/abs/2007.14062}
+}
+
+@inproceedings{liu_swin_2021,
+	author    = {Liu, Ze and Lin, Yutong and Cao, Yue and Hu, Han and Wei, Yixuan and Zhang, Zheng and Lin, Stephen and Guo, Baining},
+	title     = {Swin Transformer: Hierarchical Vision Transformer Using Shifted Windows},
+	booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+	year      = {2021},
+	pages     = {10012--10022},
+	url       = {https://openaccess.thecvf.com/}
+}
+
+@inproceedings{dascoli_convit_2021,
+	author    = {d'Ascoli, St{\'e}phane and Touvron, Hugo and Leavitt, Matthew and Morcos, Ari and Biroli, Giulio and Sagun, Levent},
+	title     = {ConViT: Improving Vision Transformers with Soft Convolutional Inductive Biases},
+	booktitle = {Proceedings of the 38th International Conference on Machine Learning (ICML)},
+	year      = {2021},
+	pages     = {2286--2296},
+	url       = {https://proceedings.mlr.press/}
+}
+
+@inproceedings{lee_set_transformer_2019,
+	author    = {Lee, Juho and Lee, Yoonho and Kim, Jungtaek and Kosiorek, Adam R. and Choi, Seungjin and Teh, Yee Whye},
+	title     = {Set Transformer: A Framework for Attention-based Permutation-Invariant Neural Networks},
+	booktitle = {Proceedings of the 36th International Conference on Machine Learning (ICML)},
+	year      = {2019},
+	pages     = {3744--3753},
+	url       = {https://proceedings.mlr.press/}
+}
+
+@inproceedings{lu_vilbert_2019,
+	author    = {Lu, Jiasen and Batra, Dhruv and Parikh, Devi and Lee, Stefan},
+	title     = {ViLBERT: Pretraining Task-Agnostic Visiolinguistic Representations for Vision-and-Language Tasks},
+	booktitle = {Advances in Neural Information Processing Systems (NeurIPS 2019)},
+	year      = {2019},
+	url       = {https://arxiv.org/abs/1908.02265}
+}
+
+@inproceedings{tan_lxmert_2019,
+	author    = {Tan, Hao and Bansal, Mohit},
+	title     = {LXMERT: Learning Cross-Modality Encoder Representations from Transformers},
+	booktitle = {Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing (EMNLP-IJCNLP)},
+	year      = {2019},
+	pages     = {5100--5111},
+	doi       = {10.18653/v1/D19-1514},
+	url       = {https://doi.org/10.18653/v1/D19-1514}
+}
+
+@inproceedings{li_albef_2021,
+	author    = {Li, Junnan and Selvaraju, Ramprasaath R. and Gotmare, Akhilesh and Joty, Shafiq and Xiong, Caiming and Hoi, Steven C. H.},
+	title     = {Align before Fuse: Vision and Language Representation Learning with Momentum Distillation},
+	booktitle = {Advances in Neural Information Processing Systems (NeurIPS 2021)},
+	year      = {2021},
+	url       = {https://arxiv.org/abs/2107.07651}
+}
+
+@inproceedings{li_blip2_2023,
+	author    = {Li, Junnan and Li, Dongxu and Xiong, Caiming and Hoi, Steven C. H.},
+	title     = {{BLIP-2}: Bootstrapping Language-Image Pre-training with Frozen Image Encoders and Large Language Models},
+	booktitle = {Proceedings of the 40th International Conference on Machine Learning (ICML)},
+	year      = {2023},
+	url       = {https://arxiv.org/abs/2301.12597}
+}
+
+@inproceedings{hu_senet_2018,
+	author    = {Hu, Jie and Shen, Li and Sun, Gang},
+	title     = {Squeeze-and-Excitation Networks},
+	booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+	year      = {2018},
+	pages     = {7132--7141},
+	doi       = {10.1109/CVPR.2018.00745},
+	url       = {https://doi.org/10.1109/CVPR.2018.00745}
+}
+
+@inproceedings{woo_cbam_2018,
+	author    = {Woo, Sanghyun and Park, Jongchan and Lee, Joon-Young and Kweon, In So},
+	title     = {CBAM: Convolutional Block Attention Module},
+	booktitle = {Proceedings of the European Conference on Computer Vision (ECCV)},
+	year      = {2018},
+	doi       = {10.1007/978-3-030-01234-2_1},
+	url       = {https://doi.org/10.1007/978-3-030-01234-2_1}
+}
+
+@inproceedings{wang_nonlocal_2018,
+	author    = {Wang, Xiaolong and Girshick, Ross and Gupta, Abhinav and He, Kaiming},
+	title     = {Non-local Neural Networks},
+	booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+	year      = {2018},
+	pages     = {7794--7803},
+	doi       = {10.1109/CVPR.2018.00813},
+	url       = {https://doi.org/10.1109/CVPR.2018.00813}
+}
+
+@inproceedings{dauphin_glu_2017,
+	author    = {Dauphin, Yann N. and Fan, Angela and Auli, Michael and Grangier, David},
+	title     = {Language Modeling with Gated Convolutional Networks},
+	booktitle = {Proceedings of the 34th International Conference on Machine Learning (ICML)},
+	year      = {2017},
+	pages     = {933--941},
+	url       = {https://proceedings.mlr.press/}
+}
+
+@misc{dosovitskiy_vit_2021,
+	title         = {An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale},
+	author        = {Dosovitskiy, Alexey and Beyer, Lucas and Kolesnikov, Alexander and Weissenborn, Dirk and Zhai, Xiaohua and Unterthiner, Thomas and Dehghani, Mostafa and Minderer, Matthias and Heigold, Georg and Gelly, Sylvain and Uszkoreit, Jakob and Houlsby, Neil},
+	year          = {2021},
+	eprint        = {2010.11929},
+	archivePrefix = {arXiv},
+	primaryClass  = {cs.CV},
+	url           = {https://arxiv.org/abs/2010.11929}
+}
+
+@inproceedings{jaegle_perceiver_2021,
+	author    = {Jaegle, Andrew and Gimeno, Felix and Brock, Andrew and Zisserman, Andrew and Vinyals, Oriol and Carreira, Jo{\~a}o},
+	title     = {Perceiver: General Perception with Iterative Attention},
+	booktitle = {Proceedings of the 38th International Conference on Machine Learning (ICML)},
+	year      = {2021},
+	pages     = {4651--4664},
+	url       = {https://proceedings.mlr.press/}
+}
+
+
+@inproceedings{loshchilov_hutter_2017,
+	author = {Loshchilov, Ilya and Hutter, Frank},
+	year = {2016},
+	month = {08},
+	pages = {},
+	title = {{SGDR}: Stochastic Gradient Descent with Warm Restarts},
+	doi = {10.48550/arXiv.1608.03983}
+}
+@article{wang_bovik_ssim_2004,
+	author  = {Wang, Zhou and Bovik, Alan C. and Sheikh, Hamid R. and Simoncelli, Eero P.},
+	title   = {Image quality assessment: from error visibility to structural similarity},
+	journal = {IEEE Transactions on Image Processing},
+	year    = {2004},
+	volume  = {13},
+	number  = {4},
+	pages   = {600--612},
+	doi     = {10.1109/TIP.2003.819861},
+	url     = {https://doi.org/10.1109/TIP.2003.819861}
+}
+
+@inproceedings{goodfellow_gan_2014,
+	author    = {Goodfellow, Ian and Pouget-Abadie, Jean and Mirza, Mehdi and Xu, Bing and Warde-Farley, David and Ozair, Sherjil and Courville, Aaron and Bengio, Yoshua},
+	title     = {Generative Adversarial Nets},
+	booktitle = {Advances in Neural Information Processing Systems (NeurIPS 2014)},
+	year      = {2014},
+	url       = {https://papers.nips.cc/}
+}
+
+@inproceedings{johnson_perceptual_2016,
+	author    = {Johnson, Justin and Alahi, Alexandre and Fei-Fei, Li},
+	title     = {Perceptual losses for real-time style transfer and super-resolution},
+	booktitle = {Proceedings of the European Conference on Computer Vision (ECCV)},
+	year      = {2016},
+	pages     = {694--711},
+	doi       = {10.1007/978-3-319-46475-6_43},
+	url       = {https://doi.org/10.1007/978-3-319-46475-6_43}
+}
+
+@article{simonyan_vgg_2015,
+	author = {Simonyan, Karen and Zisserman, Andrew},
+	year = {2014},
+	month = {09},
+	pages = {},
+	title = {Very Deep Convolutional Networks for Large-Scale Image Recognition},
+	journal = {arXiv 1409.1556}
+}
+@article{dempster_em_1977,
+	author  = {Dempster, Arthur P. and Laird, Nan M. and Rubin, Donald B.},
+	title   = {Maximum Likelihood from Incomplete Data via the {EM} Algorithm},
+	journal = {Journal of the Royal Statistical Society: Series B},
+	year    = {1977},
+	volume  = {39},
+	number  = {1},
+	pages   = {1--38},
+	doi     = {10.1111/j.2517-6161.1977.tb01600.x},
+	url     = {https://doi.org/10.1111/j.2517-6161.1977.tb01600.x}
+}
+@article{psnr,
+	author = {Q. Huynh-Thu  and M. Ghanbari },
+	title = {Scope of validity of PSNR in image/video quality assessment},
+	journal = {Electronics Letters},
+	volume = {44},
+	issue = {13},
+	pages = {800-801},
+	year = {2008},
+	doi = {10.1049/el:20080522},
+	
+	URL = {https://digital-library.theiet.org/doi/abs/10.1049/el%3A20080522},
+	eprint = {https://digital-library.theiet.org/doi/pdf/10.1049/el%3A20080522}
+}
+
+% -------------------- added for fusion/next steps --------------------
+@inproceedings{he_resnet_2016,
+  title={Deep Residual Learning for Image Recognition},
+  author={He, Kaiming and Zhang, Xiangyu and Ren, Shaoqing and Sun, Jian},
+  booktitle={Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition},
+  year={2016},
+  pages={770--778},
+  doi={10.1109/CVPR.2016.90}
+}
+
+@inproceedings{huang_densenet_2017,
+  title={Densely Connected Convolutional Networks},
+  author={Huang, Gao and Liu, Zhuang and Van Der Maaten, Laurens and Weinberger, Kilian Q.},
+  booktitle={Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition},
+  year={2017},
+  pages={4700--4708},
+  doi={10.1109/CVPR.2017.243}
+}
+
+@inproceedings{netzer_svhn_2011,
+  title={Reading Digits in Natural Images with Unsupervised Feature Learning},
+  author={Netzer, Yuval and Wang, Tao and Coates, Adam and Bissacco, Alessandro and Wu, Bo and Ng, Andrew Y.},
+  booktitle={NIPS Workshop on Deep Learning and Unsupervised Feature Learning},
+  year={2011}
+}
+
+@INPROCEEDINGS{ng_facescrub_2014,
+	author={Ng, Hong-Wei and Winkler, Stefan},
+	booktitle={2014 IEEE International Conference on Image Processing (ICIP)}, 
+	title={A data-driven approach to cleaning large face datasets}, 
+	year={2014},
+	volume={},
+	number={},
+	pages={343-347},
+	keywords={Face;Computer vision;Vectors;Face recognition;Detectors;Support vector machines;Outlier Detection;Face Recognition},
+	doi={10.1109/ICIP.2014.7025068}}
+	
+@article{Martin2019TraditionalAH,
+	title={Traditional and Heavy-Tailed Self Regularization in Neural Network Models},
+	author={Charles H. Martin and Michael W. Mahoney},
+	journal={ArXiv},
+	year={2019},
+	volume={abs/1901.08276},
+	url={https://api.semanticscholar.org/CorpusID:59222778}
 }

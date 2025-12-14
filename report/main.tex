@@ -8,6 +8,7 @@
 \usepackage{pgfgantt}
 \usepackage{enumitem}
 \usepackage{float}
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
 % Chapter-style headings in article
 \titleformat{\section}{\large\bfseries}{\thesection}{1em}{}
 \titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
@@ -26,11 +27,11 @@
 \vspace{3cm}
 
 % --- Title ---
-\Large \textbf{Project Proposal:}\\[6pt]
+\Large \textbf{Interim Report:}\\[6pt]
 \Large \textbf{Investigation of Defense Mechanisms against Model Inversion Attacks}
 
 \vspace{2cm}
-\normalsize {Submitted \textbf{October, 2025}, in partial fulfillment of \\ the conditions for the award of the degree \bf{BSc Computer Science}.}\\
+\normalsize {Submitted \textbf{December, 2025}, in partial fulfillment of \\ the conditions for the award of the degree \bf{BSc Computer Science}.}\\
 % --- Student Info ---
 \vspace{1.5cm}
 \large
@@ -56,7 +57,7 @@ School of Computer Science\\University of Nottingham Ningbo China
 % Abstract
 % ----------------------------
 \begin{abstract}
-Collaborative (edge–cloud) inference splits a network into an on-device encoder and a cloud decoder; the uploaded intermediate features are vulnerable to model inversion attacks (MIAs). Xia et al. \cite{cem} formalized a defense by maximizing a Gaussian-mixture lower bound of the conditional entropy $H(x \mid z)$, but fitting high-dimensional mixtures is computationally heavy and sensitive to non-Gaussian feature geometry. This project targets a learnable, distribution-agnostic surrogate of $H(x \mid z)$ that preserves task accuracy while increasing inversion error. To date: (1) the public CEM baseline has been reproduced under the default CIFAR-10 split (VGG11-BN-SGM, cutlayer=4, noise variance 0.025, $\lambda=16$); (2) a gated-attention conditional-entropy surrogate was designed, using class-wise gated pooling and variance-based log-entropy penalty, raising attack MSE from 0.0436 to 0.0473 and lowering SSIM from 0.432 to 0.411 with only a minor accuracy drop (85.18\% to 84.34\%); (3) an exploratory Slot + Gated Cross-Attention surrogate (slot aggregation plus Flamingo-style gated cross-attention) reached 85.04\% accuracy but degraded privacy (MSE 0.0393, SSIM 0.459). The current evidence favors gated attention as a stronger privacy–utility trade-off. The slot-based route likely needs architectural fusion (e.g., shortcut or parallel coupling with gated pooling) to stabilize variance estimates before it can surpass the baseline. Next steps focus on such fusion designs and hyperparameter sweeps to retain accuracy while further elevating inversion error.
+Collaborative (edge–cloud) inference splits a network into an on-device encoder and a cloud decoder; the uploaded intermediate features are vulnerable to model inversion attacks (MIAs). Xia et al. \cite{cem} formalized a defence by maximizing a Gaussian-mixture lower bound of the conditional entropy $H(x \mid z)$, but fitting high-dimensional mixtures is computationally heavy and sensitive to non-Gaussian feature geometry. This project targets a learnable, distribution-agnostic surrogate of $H(x \mid z)$ that preserves task accuracy while increasing inversion error. To date: (1) the public CEM baseline has been reproduced under the default CIFAR-10 split (VGG11-BN-SGM, cutlayer=4, noise variance 0.025, $\lambda=16$); (2) a gated-attention conditional-entropy surrogate was designed, using class-wise gated pooling and variance-based log-entropy penalty, raising attack MSE from 0.0436 to 0.0473 and lowering SSIM from 0.432 to 0.411 with only a minor accuracy drop (Prec@1 85.18\% to 84.34\%); (3) an exploratory Slot + Gated Cross-Attention surrogate (slot aggregation plus Flamingo-style gated cross-attention) reached 84.69\% accuracy but degraded privacy (MSE 0.0393, SSIM 0.459). The current evidence favors gated attention as a stronger privacy–utility trade-off. The slot-based route likely needs architectural fusion (e.g., shortcut or parallel coupling with gated pooling) to stabilize variance estimates before it can surpass the baseline. Next steps focus on such fusion designs and hyperparameter sweeps to retain accuracy while further elevating inversion error.
 \end{abstract}
 \newpage
 \tableofcontents
@@ -66,211 +67,636 @@ Collaborative (edge–cloud) inference splits a network into an on-device encode
 \section{Introduction}
 
 \subsection{Background and Motivation}
-In collaborative (edge–cloud) inference, a lightweight encoder on the device produces an intermediate representation $z$ that is sent to a cloud-side decoder. This reduces on-device compute and bandwidth, but exposes $z$ to model inversion attacks (MIAs): adversaries with access to $z$ and the encoder can train decoders or generative models to reconstruct the private input $x$ \cite{fredrikson_mi,hitaj_gan_mi,nasr_whitebox,zhu_dlg,carlini_diffusion}. Prior obfuscation methods (noise injection, pruning, dropout, adversarial representation learning) improve privacy empirically \cite{noise_arl,patrol,distcorr,srivastava_dropout} but lack a principled link to worst-case inversion error.
+Modern vision and multimodal networks are routinely deployed as services, yet their use in privacy-sensitive domains (health, biometrics, personal media) is constrained by the risk that intermediate computations reveal private inputs. Collaborative (edge–cloud) inference mitigates on-device compute and bandwidth by splitting the model: a shallow encoder runs on the device, producing an intermediate representation $z$ that a cloud decoder consumes \cite{vepakomma_splitnn,thapa_splitfed,shlezinger_edge_ensemble}. This architectural split leaves $z$ as the primary attack surface. Model inversion attacks (MIAs) exploit $z$ and any accessible parameters to reconstruct input content: early confidence-based attacks invert logits or posterior scores \cite{fredrikson_mi}; generative adversarial attacks synthesize inputs consistent with $z$ \cite{hitaj_gan_mi}; gradient leakage recovers training data in white-box settings \cite{zhu_dlg}; recent work shows that even large generative models can be forced to emit training samples \cite{carlini_diffusion}; and systematic white-box analyses demonstrate both passive and active inference threats against split and federated training \cite{nasr_whitebox}. These results indicate that intermediate features in edge–cloud pipelines carry enough redundancy to be exploitable unless explicitly constrained.
 
-Xia et al. \cite{cem} introduced Conditional Entropy Maximization (CEM), showing that higher $H(x \mid z)$ lower-bounds the minimal reconstruction MSE. They operationalize $H(x \mid z)$ with a Gaussian Mixture Model (GMM) surrogate, but high-dimensional, non-Gaussian features make GMM fitting unstable, costly, and sensitive to initialization. This motivates a learnable, distribution-agnostic surrogate that can be optimized end-to-end with the split model.
+Conditional Entropy Maximization (CEM) \cite{cem} was proposed to give a principled handle on this redundancy. The pipeline mirrors collaborative inference: the local encoder $F_e$ produces $z = F_e(x)$; isotropic Gaussian noise with covariance $\Sigma_p$ is added to form $\tilde z$; the cloud decoder $F_d$ computes the task loss $L_D$; and, in parallel, a $k$-component Gaussian Mixture Model is fitted to $\tilde z$ to approximate the conditional entropy of $x$ given $z$. The surrogate
+\[
+L_C = \sum_{i=1}^k \pi_i \Big(-\log \pi_i + \tfrac{1}{2}\log \tfrac{|\Sigma_i+\Sigma_p|}{|\Sigma_p|} \Big)
+\]
+is added to the objective $L = L_D + \lambda L_C$, so that gradients from $L_C$ push $F_e$ to increase $\mathcal{H}(x|z)$ while $L_D$ preserves utility. The architecture, cut position, and noise model remain unchanged; only the conditional-entropy term shapes privacy.
+
+Defenses for MIAs outside CEM fall into two families. Cryptographic protection (secure computation, homomorphic encryption) can in principle hide $z$, but current implementations impose prohibitive latency for high-throughput inference and are difficult to deploy on resource-constrained devices. Obfuscation-based defenses reshape $z$ to reduce leakage: noise injection and adversarial representation learning \cite{noise_arl}, pruning and Lipschitz-style regularization \cite{patrol}, distance-correlation minimization \cite{distcorr}, and stochastic dropout \cite{srivastava_dropout}. These methods are largely heuristic and lack a direct link to a worst-case inversion bound, motivating a learnable, distribution-agnostic surrogate that retains CEM’s theoretical spirit but avoids per-epoch mixture fitting.
+
+The cut position in split inference compounds this need: shallow cuts keep client compute low but produce high-dimensional, less task-specific $z$ that is easier to invert; deeper cuts improve privacy but exceed typical edge budgets. Any surrogate for $\mathcal{H}(x|z)$ must therefore be robust to shallow, noisy features and avoid expensive density estimation. Attention mechanisms compute data-dependent weights and moments, suggesting a path to replace mixture fitting with learnable, differentiable statistics that reflect dispersion without explicit clustering.
 
 \subsection{Problem Statement}
-We seek a surrogate of conditional entropy that is (i) differentiable and stable on high-dimensional, non-Gaussian features; (ii) compatible with split inference constraints (encoder light, decoder heavy); and (iii) empirically improves the privacy–utility trade-off against strong MIA decoders on CIFAR-10 under a standard split protocol.
+The published CEM surrogate hinges on per-epoch GMM fitting, which becomes numerically fragile on shallow, noisy, high-dimensional smashed data, and gradients either vanish or explode, while the per-epoch clustering overhead is not suited to edge-side budgets \cite{dempster_em_1977}. Mixture assumptions also struggle to capture heavy-tailed or multi-modal feature geometry produced by shallow cuts, making $L_C$ unstable precisely where privacy pressure is most needed \cite{Martin2019TraditionalAH}. Under the fixed split architecture and strong white-box MIA threat model (encoder known, $\tilde z$ observed, reconstructor trained to convergence), the outstanding issue is that conditional-entropy regularization depends on a brittle density fit. The question is whether a drop-in surrogate can retain the information-theoretic intent while remaining stable, fully differentiable, and lightweight on non-Gaussian features.
 
 \subsection{Aim and Objectives}
-\textbf{Aim.} Develop and evaluate a learnable surrogate for conditional entropy that improves MIA robustness in split inference without materially degrading task accuracy.
-
-\textbf{Objectives.}
-\begin{itemize}[leftmargin=1.5em]
-    \item Reproduce the CEM baseline \cite{cem} on CIFAR-10 with the public protocol (VGG11-BN-SGM, cutlayer=4, Gaussian noise).
-    \item Design a gated-attention surrogate that replaces GMM fitting with class-wise gated pooling and variance-based entropy penalties.
-    \item Explore a Slot + Gated Cross-Attention surrogate (slot aggregation plus gated cross-attention) as a richer, learnable mixture analogue.
-    \item Benchmark the two surrogates against the baseline using classification accuracy and inversion metrics (MSE, SSIM, PSNR) under a common threat model.
-    \item Analyze failure modes of the slot-based surrogate and propose fusion strategies (e.g., shortcut/parallel coupling) to stabilize variance estimation.
-\end{itemize}
+In this project the estimation of $L_C$ in CEM architecture is changed while preserving the split architecture, noise model, and task loss. The first attempt was trying to implement a Slot Attention with Gated Cross Attention surrogate: slot attention \cite{slot_attention} serves as learnable mixture components, and Flamingo-style gated cross-attention \cite{flamingo} refines token–slot alignment to estimate variance-based entropy signals. This design proved complex to tune and, under default CIFAR-10 settings, did not surpass the baseline—accuracy remained similar, but inversion robustness weakened. Guided to simplify, the subsequent gated-attention surrogate directly computes class-wise gated pooling and log-variance penalties; this yields higher inversion MSE with only minor accuracy loss. The next step is to fuse the two ideas—shortcut or parallel coupling of slots with gated pooling—to stabilize variance estimation while retaining the expressive capacity of slots.
 
 % =========================================================
 \section{Related Work}
-% 目标：展示你对领域“够懂”，并为你方法选择做铺垫。
-%
-% 建议按“主题”而不是“论文流水账”写：
-% \subsection{Model Inversion Attacks}
-% \subsection{Split Learning / Edge-Cloud Privacy}
-% \subsection{Conditional Entropy Minimization and Surrogates}
-% - 引出 baseline 用 GMM 的思路及其潜在问题（不可微/敏感/训练不稳等）。
-% \subsection{Gated Attention Mechanisms}
-% - 你的替代思路理论依据。
-% \subsection{Slot Attention and Cross-Attention}
-% - 说明你为什么认为它可能适合做更强的表征/聚类替代。
-
 \subsection{Model Inversion Attacks}
-% TODO
+Early work inverted fixed feature encoders, showing that even deep convolutional representations preserve recognizable pixels \cite{mahendran_inversion_2015,dosovitskiy_inverting_2016}. Fredrikson et al. demonstrated that class posteriors alone can leak sensitive attributes \cite{fredrikson_mi}, establishing that semantic signals in outputs are exploitable. Generative approaches strengthened MIAs: Hitaj et al. used GANs to synthesize inputs consistent with leaked activations in collaborative training \cite{hitaj_gan_mi}, while Carlini et al. extracted training samples from diffusion models \cite{carlini_diffusion}, indicating that powerful priors make inversion easier. Gradient-leakage attacks such as DLG recover raw training data from shared updates \cite{zhu_dlg}, and comprehensive white-box analyses \cite{nasr_whitebox} document both passive and active inference in centralized and federated regimes.
+
+In the edge–cloud setting, He et al. \cite{he_collab_mia_acsac19} formalized attacks when the attacker knows the encoder and sees the smashed data $z$, showing that shallow cuts and high-dimensional features make inversion particularly effective. Follow-up work on edge–cloud systems confirmed that even modest architectural changes do not prevent leakage unless $z$ is explicitly regularized \cite{he_edgecloud_iotj2020}. These findings motivate defenses that reduce redundant or task-irrelevant information in $z$ while preserving downstream accuracy.
+
+MIAs can be categorized by attacker knowledge and reconstruction mechanism. Confidence based and posterior attacks exploit soft outputs \cite{fredrikson_mi}; latent inversion uses a learned decoder given $z$ (as in \cite{he_collab_mia_acsac19}); gradient-leakage reconstructs from parameter updates \cite{zhu_dlg}; and generative priors (GANs or diffusion) hallucinate samples consistent with $z$ \cite{hitaj_gan_mi,carlini_diffusion}. Across these categories, success correlates with the mutual information between $x$ and $z$, reinforcing conditional entropy as a meaningful robustness lens.
 
 \subsection{Split Learning / Edge-Cloud Privacy}
-% TODO
+Split/edge-cloud training partitions networks to balance device efficiency and accuracy \cite{vepakomma_splitnn,thapa_splitfed,shlezinger_edge_ensemble}. Cutting at early layers minimizes on-device compute but yields high dimensional, less task-specific $z$, which enlarges the attack surface \cite{he_collab_mia_acsac19}. Deeper cuts improve privacy by embedding more task-specific features, but exceed typical edge budgets. This tension has motivated a spectrum of defences that keep the split architecture intact:
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Noise and adversarial representation learning.} Adding Gaussian noise or adversarially training encoders to resist a proxy decoder can reduce information leakage \cite{noise_arl}. GAN-based defences further co-train an inversion adversary to harden $z$ \cite{gong_gan_defense_tifs23}, though success depends on the proxy’s strength.
+    \item \textbf{Correlation minimization.} Distance-correlation penalties reduce statistical dependence between $x$ and $z$ \cite{distcorr}, aiming to strip task-irrelevant redundancy while keeping discriminative cues.
+    \item \textbf{Pruning and Lipschitz constraints.} PATROL \cite{patrol} prunes channels under Lipschitz-style constraints to suppress leak-prone activations. Such structure-aware pruning improves robustness but can hurt accuracy if over-applied.
+    \item \textbf{Stochastic masking.} Dropout \cite{srivastava_dropout} reduces consistency across queries, lowering memorization of fine-grained details in $z$, but its effect is dataset- and cut-dependent.
+    \item \textbf{Robustness transfer.} ResSFL \cite{li_ressfl_cvprw22} transfers robustness across clients in split federated learning, showing that defensive signals can propagate even under heterogeneous data.
+\end{itemize}
+These methods demonstrate empirical gains yet remain heuristic: they assume specific proxy attackers, require hyperparameter sweeps, and lack formal links to worst-case inversion bounds. CEM \cite{cem} differs by introducing an information-theoretic objective that, in principle, regularizes $z$ irrespective of the attacker’s architecture, but its practical utility hinges on the stability of the entropy surrogate.
 
-\subsection{Conditional Entropy Minimization and Surrogates}
-% TODO
+\subsection{Conditional Entropy Maximization and Surrogates}
+Conditional entropy links directly to inversion difficulty: higher $\mathcal{H}(x|z)$ raises a lower bound on reconstruction MSE under the assumed noise model \cite{cem}. CEM instantiates this by adding $L = L_D + \lambda L_C$, where $L_C$ is a differentiable log-determinant surrogate of $\mathcal{H}(x|z)$ obtained from a Gaussian mixture fitted on noisy features \cite{cem}. This design is attacker-agnostic in principle, but its practicality is limited by: (i) GMM fragility on shallow, non-Gaussian, heavy-tailed features; (ii) sensitivity of mixture assumptions to multi-modality; and (iii) per-epoch density estimation overhead \cite{dempster_em_1977,he_edgecloud_iotj2020}. Alternative regularizers (distance correlation \cite{distcorr}, adversarial noise \cite{noise_arl}, pruning \cite{patrol}, dropout \cite{srivastava_dropout}) reduce leakage but do not optimize an explicit entropy bound. These gaps motivate a distribution-agnostic surrogate that captures dispersion without clustering, remains stable under backpropagation, and can be injected into the same split-inference protocol.
+
+\subsection{Attention and Self-Attention Foundations}
+Attention assigns data-dependent weights to tokens and underpins modern sequence and vision models. Early encoder–decoder alignment for NMT \cite{bahdanau2015neural,luong_attn_2015} evolved into fully self-attentive architectures such as Transformers \cite{vaswani_attention_2017} and Vision Transformers \cite{dosovitskiy_vit_2021}, where pairwise affinities within a set enable dynamic aggregation without fixed receptive fields. Scaling variants address efficiency and inductive bias: non-local blocks bring self-attention to CNNs for long-range context \cite{wang_nonlocal_2018}; sparse/low-rank forms (Linformer \cite{wang_linformer_2020}, Performer \cite{choromanski_performer_2021}, Longformer \cite{beltagy_longformer_2020}, BigBird \cite{zaheer_bigbird_2020}) reduce quadratic costs; hierarchical designs (Swin \cite{liu_swin_2021}, ConViT \cite{dascoli_convit_2021}) inject locality for stability on images; and set-focused models (Set Transformer \cite{lee_set_transformer_2019}) provide permutation-invariant aggregation. These mechanisms offer a toolbox for computing differentiable, data-dependent statistics over feature sets—precisely what is needed to replace static mixture fitting in entropy surrogates.
 
 \subsection{Gated Attention Mechanisms}
-% TODO
+Gated variants moderate attention or feature flow with learnable gates to improve stability and control variance. Channel and spatial gates in SENet \cite{hu_senet_2018} and CBAM \cite{woo_cbam_2018} re-weight activations; non-local blocks with gated residuals stabilize long-range interactions \cite{wang_nonlocal_2018}; GLUs gate convolutional features \cite{dauphin_glu_2017}; MIL-style gated pooling stabilizes instance weighting \cite{ilse_gated_mil_2018}; and many hybrid CNN/Transformer models add gating to prevent overconfident token mixing \cite{dosovitskiy_vit_2021}. These designs share a theme—learnable modulation to avoid overconfident assignments and to smooth gradients.
 
-\subsection{Slot Attention and Cross-Attention}
-% TODO
+For a CEM surrogate, gated pooling over class-specific features yields weighted means and variances as differentiable dispersion statistics, avoiding iterative clustering and reducing sensitivity to initialization. Gates can be applied per channel, per token, or jointly, adapting to the structure of $z$ (e.g., channel attention for convolutional maps, token attention for flattened features). Because gates introduce few parameters and are trained end-to-end, they back-propagate through noisy, high-dimensional $z$ more gracefully than EM-style GMM fitting. Beyond sequence tasks, gated attention has improved stability in multimodal and dense prediction models \cite{woo_cbam_2018,wang_nonlocal_2018}, suggesting resilience to the noisy, shallow features produced in split inference when Gaussian noise is injected as in CEM.
+
+\subsection{Slot Attention}
+Slot attention \cite{slot_attention} learns a small set of latent “slots” that act like learnable mixture components, assigning tokens through iterative attention and GRU updates; it has been extended to object-centric learning and structured scene parsing. Related set-based architectures (Set Transformer \cite{lee_set_transformer_2019}) and hybrid convolution/attention designs (ConViT \cite{dascoli_convit_2021}) also aim to aggregate tokens into compact latent sets. In the context of conditional-entropy surrogates, slots can serve as adaptive mixture components without explicit density estimation, potentially capturing multi-modality in $z$. However, slot-based models introduce sensitivity to hyper-parameters (number of slots, temperature, update depth) and can be prone to collapse without additional regularization—an important consideration when $z$ is shallow, noisy, and high-dimensional. Stabilizing slots often requires careful gating, norm layers, or auxiliary losses, increasing tuning burden in split-learning regimes.
+
+\subsection{Cross-Attention and Gated Cross-Attention}
+Cross-attention aligns queries with key–value memories and is widely used in multimodal and hierarchical models: ViLBERT \cite{lu_vilbert_2019} and LXMERT \cite{tan_lxmert_2019} for vision–language pre-training, ALBEF \cite{li_albef_2021} and BLIP-2 \cite{li_blip2_2023} for efficient alignment, Flamingo \cite{flamingo} for few-shot VLMs, and Perceiver \cite{jaegle_perceiver_2021} for latent bottlenecks. Gated residuals are often added to stabilize training and prevent over-smoothing. When combined with slots, cross-attention sharpens responsibilities of tokens to latent components, acting as a learnable analogue to mixture assignment; gating modulates binding strength to prevent collapse.
 
 % =========================================================
 \section{Methodology}
-% 这是 20%+20% 的核心拿分区：不仅讲“是什么”，还要讲“为什么这样选”。
-%
-% 强烈建议放 1 张总览图：
-% - baseline pipeline
-% - 你的 gated-attention 替换点
-% - 你的 slot+gated cross attention 分支（作为探索性路线）
-%
-% 建议结构：
-% \subsection{Baseline Overview (CVPR Spotlight)}
-% - 简述 baseline 架构与 GMM-based CEM loss 计算流程。
-%
-% \subsection{Proposed Method 1: Gated-Attention CEM}
-% - 讲清 attention pooling、类内加权均值/方差、log-variance 约束。
-% - 给出关键公式/伪代码。
-% - 说明优点：可微、稳定、无需聚类初始化。
-%
-% \subsection{Proposed Method 2: Slot + Gated Cross-Attention CEM (Exploratory)}
-% - 讲动机：期望更强结构化表征。
-% - 讲你目前实现的配置/假设。
-%
-% \subsection{Evaluation Protocol}
-% - 数据集、指标、默认训练脚本设置（此处只写原则，不必贴 shell）。
-% - 说明公平对比原则。
 
-\subsection{Baseline Overview (CVPR Spotlight)}
-% TODO
+\subsection{Baseline Overview}
+The methodological starting point for this study is the Conditional Entropy Maximization (CEM) framework proposed by Xia et al.\ \cite{cem}. This work fundamentally shifted the defense paradigm from empirical heuristics to rigorous information-theoretic guarantees. The authors formally proved that the conditional entropy $\mathcal{H}(x|z)$ of the input $x$ given the intermediate feature $z$ constitutes a theoretical lower bound on the reconstruction Mean Square Error (MSE) against any worst-case adversary. To operationalize this intractable quantity, the baseline employs a variational approximation strategy: it models the latent feature distribution using a Gaussian Mixture Model (GMM) and derives a differentiable surrogate loss, ${L}_{C}$, which penalizes the mutual information between the input and the smashed data. By integrating this surrogate into the training loop, the encoder is incentivized to maximize feature dispersion, thereby raising the barrier for inversion attacks.
 
 \subsection{Proposed Method 1: Gated-Attention CEM}
-% TODO
-% You may add a short equation block here later.
+Method 1 pursues the most conservative change that still captures intra-class dispersion. Drawing on gated pooling in vision \cite{hu_senet_2018,woo_cbam_2018} and MIL \cite{ilse_gated_mil_2018}, each class slice of $\tilde z$ is softly re-weighted by a learnable gate. Gated means and variances are then computed in closed form, and a hinge on log-variance, calibrated to the injected noise, becomes the surrogate $L_C^{\text{gated}}$. The design keeps three invariants: (i) differentiability everywhere (no hard assignments), (ii) robustness to outliers via gating, and (iii) linear-time computation with no covariance inversion.
 
-\subsection{Proposed Method 2: Slot + Gated Cross-Attention CEM (Exploratory)}
-% TODO
+\paragraph{Design principles.} Method 1 is engineered around four constraints. First, the compute and memory consumption must remain essentially identical to the baseline so that any gain do not need extra computational resources because the original pipeline already needs over 24G graphic memory. Gates add only a shallow projection and a vector of weights, yielding $O(BD)$ overhead that matches the baseline encoder’s per-batch cost. Second, gradients must stay stable on shallow, noisy features; gating plus a log-variance hinge dampens the influence of rare outliers and eliminates matrix inversions that become ill-conditioned. Third, the surrogate must respond directly to intra-class dispersion—the quantity that drives $\mathcal{H}(x|z)$—rather than to arbitrary clustering artefacts. By tying the hinge threshold to the injected noise, the method explicitly asks whether variance has collapsed below the noise floor and only then pushes it up.
+
+\paragraph{Expected behaviour and trade-offs.} Because the hinge activates only when class variance undercuts the noise, the surrogate avoids over-regularizing naturally spread-out classes while still penalizing collapsed ones. The anticipated outcome is a modest accuracy drop (dispersion is increased) accompanied by higher reconstruction error (features are less recoverable). The surrogate is attacker-agnostic: it reshapes $z$ so that any reasonable reconstructor must deal with elevated conditional entropy. It also preserves deployment footprint; no inference-time cost is added because gates are used only during training. This positions Method 1 as a “minimal intervention” that upholds the baseline threat model and architecture while improving the privacy–utility balance through a smoother, moment-based entropy proxy.
+
+Method 1 is a controlled ablation of CEM: same cut, same attacker, same noise, but a surrogate that trades mixture expressiveness for robustness. Empirical results show that this restrained change yields the strongest privacy gains on default configurations .
+
+\paragraph{Failure modes and tuning levers.} Method 1 can underperform if the hinge threshold is set too low (privacy gradients vanish) or too high (over-regularization harms accuracy). Gate saturation can also freeze learning if initialization is too aggressive. The methodology therefore pairs conservative initialization (near-uniform gates) with a threshold tied to the injected noise, reducing manual tuning. Ablations planned later (varying $\tau$, gate width, and loss scale) will probe these sensitivities within the same protocol.
+
+\subsection{Proposed Method 2: Slot + Gated Cross-Attention CEM }
+Method 2 explores richer structure without explicit density fitting. Building on slot attention \cite{slot_attention}, a small set of slots acts as learnable mixture components that iteratively aggregate class tokens via attention and GRU updates. Inspired by Flamingo’s gated cross-attention \cite{flamingo}, token–slot binding is modulated by gates that control how strongly slots rewrite token features. Slot-wise responsibilities, means, and variances drive a gated variance penalty that plays the role of $L_C$ but with amortized mixture components.
+
+\paragraph{Motivation and expectations.} Slots offer a learnable analogue to mixture components: they can represent multiple modes within a class (e.g., pose, background, texture), and gated cross-attention can prevent early collapse by throttling how much slots alter token features. In theory, this combination should capture multi-modality that simple pooling might miss, potentially tightening the entropy surrogate when classes are inherently diverse.
+
+\paragraph{Practical challenges.} The added expressiveness comes with sensitivity. Slot count, attention temperature, and gate initialization all influence responsibility sharpness; poorly tuned values slow surrogate improvement or cause slot collapse. The optimization path is longer—slots must first stabilize before the variance penalty can effectively push dispersion. Under the default protocol, this manifested as stable accuracy but weaker privacy than even the GMM baseline, indicating that variance remained under-regularized. Compute overhead also rises to $O(TBSD)$, which, while tractable on the target GPU, is still higher than Method 1.
+
+Method 2 is treated as an exploratory branch whose insights feed a fusion design: pairing slots with the robust gated pooling (in parallel or via shortcut) to anchor variance while still modeling modes. It shows that expressiveness alone does not guarantee privacy gains under fixed resources and threat assumptions; stability and calibrated thresholds remain essential.
+
+\paragraph{Failure analysis and levers.} Early experiments suggest that responsibility sharpening, gate scales, and slot count jointly control stability. Too few slots collapse modes; too many diffuse responsibilities and mute the variance penalty. Similarly, if cross-attention gates start too large, tokens are rewritten aggressively and slots destabilize; if too small, slots never meaningfully bind. Planned ablations will vary slot count, temperature, and gate initializations while keeping the protocol fixed, guiding the eventual fusion with Method 1.
 
 \subsection{Evaluation Protocol}
-% TODO
+All variants are assessed under a single, locked protocol so that differences can only be attributed to the surrogate. Data and model: CIFAR-10 with standard normalization; VGG11-BN-SGM cut after layer 4; noise variance fixed at $\sigma=0.025$. Optimization: SGD with momentum for 240 epochs, batch size 128, and a multi-step learning rate schedule (milestones 60/120/180/210/260, $\gamma=0.2$) as in the reproduced CEM pipeline \cite{cem}. Threat model: identical white-box reconstructor trained on $\tilde z$ to convergence, with no auxiliary perceptual losses. Metrics: utility via top-1 accuracy; privacy via MSE, SSIM, and PSNR (standard image-quality metrics \cite{wang_bovik_ssim_2004,psnr}). Reproducibility: seeds, data order, and noise draws are fixed.
+
+\paragraph{Fairness and scope.} Architectural degrees of freedom (encoder depth, decoder capacity), cut position, noise schedule, and attacker strength are frozen; only the entropy surrogate changes. This prevents improvements from being confounded with deeper cuts or weaker attackers. Metrics are chosen to capture both goals of split learning: task fidelity (accuracy) and privacy (MSE/SSIM/PSNR), consistent with original pipeline. Runs share identical seeds and data ordering to reduce stochastic variance, and the attacker is always trained to convergence to avoid underestimating leakage. The scope is intentionally narrow—single dataset, single cut, single attacker—to provide clean causal attribution; future work can extend to additional datasets, alternative cuts, or black-box attackers once the surrogate behaviour is understood.
+
+\paragraph{Ablation and reporting plan.} Within this protocol, ablations will vary only surrogate-specific knobs (e.g., gate width and variance threshold for Method 1; slot count, attention temperature, and gate inits for Method 2) while keeping all else fixed. Results will be reported with paired accuracy and privacy metrics to highlight trade-offs, and, where resources permit, averaged over multiple seeds to expose variance. This keeps the methodological focus on the surrogate’s causal effect rather than on incidental training noise.
+
+\paragraph{Reproducibility and limits of current scope.} Because the threat model is fixed and the codebase is deterministic (fixed seeds, fixed noise draws), experiments can be rerun to verify trends. However, the methodology consciously limits itself to one dataset and one cut position; it does not yet address distribution shift, larger images, or black-box attackers. These are deferred intentionally to keep the causal link between surrogate choice and experiment outcome clear; future extensions can expand the protocol to different configurations once the surrogate behaviour is fully characterized under this controlled setting.
 
 % =========================================================
 \section{Implementation}
-% 说明“你真的做了”。
-% 可写：
-% - 代码结构（模块级别）
-% - 关键工程决策
-% - 训练稳定性处理（warmup, loss scaling, gradient handling 等）
-%
-% 这部分可以简单，但要让评阅人看到可复现性意识。
+\subsection{Architecture and Threat Model}
+The implementation keeps the collaborative split pipeline of Xia et al.\ \cite{cem} intact while replacing only the conditional-entropy surrogate. A VGG11-BN-SGM backbone \cite{simonyan_vgg_2015} is cut after the fourth convolutional block, yielding an encoder $F_e:\mathbb{R}^{3\times 32\times 32}\to\mathbb{R}^{8\times 8\times 8}$ (flattened to $D=512$) and a decoder $F_d$ on the cloud. For a batch $\{(x_b,y_b)\}_{b=1}^B$,
+\[
+ z_b = F_e(x_b),\qquad \varepsilon_b \sim \mathcal{N}(0,\sigma^2 I),\qquad \tilde z_b = z_b + \varepsilon_b,\qquad g_b = F_d(\tilde z_b),
+\]
+with task loss $L_D = \frac{1}{B}\sum_{b=1}^B \ell_{\text{CE}}(g_b,y_b)$ \cite{simonyan_vgg_2015}. The threat model fixes a strong white-box adversary: the attacker knows $F_e$, observes $\tilde z$, and trains a reconstructor $A_\phi$ to minimize $\|A_\phi(\tilde z)-x\|^2$ as in split-MIA settings \cite{he_collab_mia_acsac19,he_edgecloud_iotj2020}; privacy is reported with MSE/SSIM/PSNR \cite{wang_bovik_ssim_2004,psnr}, and utility with top-1 accuracy. CIFAR-10 is normalized, noise variance is $\sigma=0.025$, and no extra augmentation is used to avoid confounding the privacy effect. Architecture, cut position, and noise are held constant across all variants so that differences stem solely from the surrogate $L_C$.
 
-% TODO
+\subsection{Baseline Conditional-Entropy Surrogate}
+The original CEM optimizes $L = L_D + \lambda L_C$ with $\lambda=16$, where $L_C$ approximates $\mathcal{H}(x|z)$ via a $k$-component Gaussian mixture fitted on $\{\tilde z_b\}$ each epoch \cite{cem}. With mixture weights $\pi_i$, covariances $\Sigma_i$, and additive noise $\Sigma_p=\sigma^2 I$,
+\[
+ L_C^{\text{GMM}} = \sum_{i=1}^k \pi_i \left(-\log \pi_i + \tfrac{1}{2}\log \frac{|\Sigma_i+\Sigma_p|}{|\Sigma_p|}\right).
+\]
+Maximizing $L_C$ therefore encourages dispersion of noisy features, which in turn raises a lower bound on reconstruction error. The proposed surrogates replace only this estimation while keeping the rest of the pipeline unchanged.
+
+\subsection{Training Schedule and Optimization}
+All variants follow a unified protocol (matching the reproduced original pipeline default): 240 epochs of SGD with momentum 0.9, weight decay $5\times 10^{-4}$, batch size 128, and an initial learning rate of 0.05 with a multi-step schedule (milestones 60/120/180/210/260, $\gamma=0.2$) \cite{cem}. Encoder and decoder are trained jointly; the attacker $A_\phi$ is trained after the classifier. Noise is injected once at the cut for both the task and the surrogate. Seeds, data order, and noise draws are fixed for reproducibility, following split-attack practice \cite{he_collab_mia_acsac19}. By freezing architecture, optimizer, schedule, and cut position, observed differences can be attributed to the surrogate rather than to confounding training choices.
+
+The attacker follows the original pipeline design proposed in CEM \cite{cem} : it receives $\tilde z$ and is trained with $\ell_2$ reconstruction loss under the same normalization as the classifier \cite{cem,he_collab_mia_acsac19}. No auxiliary perceptual losses are used, keeping the attacker a strong but bounded white-box reconstructor \cite{noise_arl}. Training splits are identical across baselines and surrogates; convergence is monitored on the validation set to avoid underestimating the attacker, a standard precaution in white-box split attacks \cite{he_edgecloud_iotj2020}. This alignment ensures that any change in reconstruction error arises from the encoder regularization rather than from attacker capacity \cite{mahendran_inversion_2015}.
+
+\subsection{Design Criteria for the Surrogate}
+The replacement for $L_C$ must satisfy four constraints: (i) it remains fully differentiable and stable on shallow, noisy features \cite{he_edgecloud_iotj2020}; (ii) it avoids iterative clustering to respect edge-side resource limits \cite{patrol}; (iii) it responds to intra-class dispersion, which drives $\mathcal{H}(x|z)$ \cite{cem}; and (iv) it allows privacy gradients to be injected before task gradients, as in CEM \cite{cem}. Two surrogates were explored under these constraints: a gated-attention penalty that computes class-wise weighted moments, and a slot-based penalty that treats slots as learnable mixture components refined by gated cross-attention \cite{slot_attention,flamingo}.
+
+\subsection{Gated-Attention Surrogate}
+
+\paragraph{Gated moment estimation.}
+For class $c$, define
+\[
+Z_c = \{\tilde z_b : y_b = c\} \subset \mathbb{R}^{B_c \times D}.
+\]
+Features are first normalized with LayerNorm, then passed through the gated
+attention mechanism of \cite{ilse_gated_mil_2018}:
+\begin{equation}
+	\label{eq:gated_attn}
+	\begin{aligned}
+		V &= \tanh(W_V \tilde z_b), \\
+		U &= \sigma(W_U \tilde z_b), \\
+		\alpha_b
+		&=
+		\mathrm{softmax}_b
+		\bigl(
+		w^\top (V \odot U)
+		\bigr),
+	\end{aligned}
+\end{equation}
+yielding softmax-normalized weights $\alpha_b$ per token.
+The class-wise weighted mean and variance are given by
+\begin{equation}
+	\label{eq:gated_moments}
+	\begin{aligned}
+		\mu_c
+		&=
+		\frac{\sum_b \alpha_b \, \tilde z_b}{\sum_b \alpha_b}, \\[0.4em]
+		v_c
+		&=
+		\frac{\sum_b \alpha_b \, (\tilde z_b - \mu_c)^2}{\sum_b \alpha_b}.
+	\end{aligned}
+\end{equation}
+The low-rank projections $W_V$ and $W_U$ dampen noise, akin to efficient attention
+projections \cite{wang_linformer_2020,choromanski_performer_2021}.
+
+\paragraph{Entropy-shaped penalty.}
+The privacy term applies a hinge on the log-variance, with the threshold tied to
+the noise/regularization scale
+(\texttt{var\_threshold} $\times$ \texttt{reg\_strength}$^2$):
+\begin{equation}
+	\label{eq:gated_penalty}
+	\begin{aligned}
+		L_C^{\text{gated}}
+		&=
+		\frac{1}{C}
+		\sum_{c=1}^C
+		\frac{1}{D}
+		\sum_{j=1}^D
+		\max\!\Bigl(
+		0,\,
+		\log(v_{c,j}+\epsilon)
+		-
+		\log \tau
+		\Bigr), \\
+		L
+		&=
+		L_D + \lambda L_C^{\text{gated}} .
+	\end{aligned}
+\end{equation}
+Gradients propagate through $W_V$, $W_U$, and $w$ into $F_e$, supplying
+dispersion-sensitive signals without clustering, similar in spirit to
+variance-floor regularizers used in noise-based defenses \cite{noise_arl}.
+The overall complexity is $O\!\left(\sum_c B_c D\right)$, and no matrix inversions
+are required \cite{dempster_em_1977}.
+\paragraph{Gradient injection order.} To mirror CEM’s privacy-first schedule, $L_C^{\text{gated}}$ is backpropagated first; encoder and gate gradients are saved; $L_D$ is then backpropagated; saved gradients are added (optionally scaled by the current learning rate) before the optimizer step \cite{cem}. This ordering stabilizes early training when $\tilde z$ is noisy and prevents the task loss from erasing privacy gradients, a practice recommended in privacy-regularized split learning \cite{he_collab_mia_acsac19,noise_arl}.
+
+\paragraph{Why gated attention helps.} Gating smooths assignment noise, prevents a few outliers from dominating variance estimates, and keeps the surrogate differentiable everywhere. Unlike EM-fitting of GMMs, it introduces no discrete assignments and no covariance inversions. Because the hinge truncates gradients for compact classes, it avoids over-regularizing naturally tight clusters, which preserves accuracy.
+
+\paragraph{Pseudo-code and data flow (Gated-Attention).}
+To match a paper-style presentation (Algorithm~\ref{alg:gated_cem_update}), the
+training step below mirrors the implementation in \texttt{gated-att/} at the
+level of algorithmic operations (without language-specific details).
+
+\begin{algorithm}[H]
+\small
+\DontPrintSemicolon
+\caption{Privacy-first update with the gated-attention CEM surrogate}
+\label{alg:gated_cem_update}
+\KwIn{mini-batch $(x,y)$; encoder $F_e$; head $F_d$; optimizer $\mathcal{O}$; scheduler LR $\eta$; epoch $e$; warmup $E_w=5$; loss weight $\lambda$; regularization strength $\sigma$; \texttt{var\_threshold} $\rho$; CEM scale $s_{\text{cem}}=0.1$; flag \texttt{random\_ini\_centers}}
+\KwOut{updated parameters of $F_e$, $F_d$, and gated-attention surrogate}
+$z \leftarrow F_e(x)$; $Z \leftarrow \mathrm{vec}(z)$; $U \leftarrow \mathrm{unique}(y)$; $B \leftarrow |x|$\;
+$D \leftarrow \mathrm{dim}(Z)$\;
+$\texttt{use\_att} \leftarrow (\neg\texttt{random\_ini\_centers}) \wedge (\lambda>0) \wedge (e>E_w)$\;
+$\ell_{\text{cem}} \leftarrow 0$\;
+\If{$\texttt{use\_att}$ \textbf{and} $Z$ has no NaN/Inf}{
+    \If{\texttt{gated\_attention\_cem} is uninitialized}{
+        $h \leftarrow \min(512,\max(64,\lfloor D/4\rfloor))$\;
+        Initialize \texttt{gated\_attention\_cem} with $(D,h,\rho,\sigma)$ and register its parameters in $\mathcal{O}$\;
+    }
+    $\log\tau \leftarrow \log(\max(\rho\cdot\sigma^2,10^{-8}) + \gamma)$ with $\gamma=10^{-6}$\;
+    $\texttt{total} \leftarrow 0$; $\texttt{wgt} \leftarrow 0$\;
+    \ForEach{$c \in U$}{
+        $Z_c \leftarrow \{Z_b: y_b=c\}$; $M \leftarrow |Z_c|$\;
+        \If{$M \le 1$}{\textbf{continue}}
+        $X \leftarrow \mathrm{LayerNorm}(Z_c)$\;
+        $V \leftarrow \tanh(W_V X)$; $G \leftarrow \sigma(W_U X)$\;
+        $\alpha \leftarrow \mathrm{softmax}\big(w^\top(V\odot G)\big)$ over tokens\;
+        $\mu \leftarrow \sum_m \alpha_m X_m$; $v \leftarrow \sum_m \alpha_m (X_m-\mu)^2$\;
+        $v \leftarrow \max(v,\epsilon)$ with $\epsilon=10^{-6}$\;
+        $L_c \leftarrow \mathrm{mean}_j\,\max\bigl(0,\log(v_j+\gamma)-\log\tau\bigr)$\;
+        $\texttt{total} \leftarrow \texttt{total} + (M/B)\,L_c$; $\texttt{wgt} \leftarrow \texttt{wgt} + (M/B)$\;
+    }
+    $\ell_{\text{cem}} \leftarrow s_{\text{cem}}\cdot \texttt{total}/\max(\texttt{wgt},10^{-8})$\;
+}
+$\tilde z \leftarrow z$; \If{\texttt{Gaussian noise enabled}}{$\tilde z \leftarrow z + \sigma\cdot \mathcal{N}(0,I)$}\;
+$g \leftarrow F_d(\tilde z)$; $\ell_{\text{task}} \leftarrow \mathrm{CE}(g,y)$\;
+\If{$\texttt{use\_att}$ \textbf{and} $\ell_{\text{cem}}$ requires grad}{
+    Backprop $\ell_{\text{cem}}$; cache encoder and surrogate gradients; $\mathcal{O}.\mathrm{zero\_grad}()$\;
+}
+Backprop $\ell_{\text{task}}$\;
+\If{cached encoder gradients exist}{
+    $s_{\eta} \leftarrow 1$ if $\eta<4.1\times 10^{-4}$ else $0.001/\eta$\;
+    Merge privacy gradients into encoder: $\nabla \leftarrow \nabla + \lambda\,s_{\eta}\,\nabla \ell_{\text{cem}}$\;
+    Restore cached surrogate gradients\;
+}
+$\mathcal{O}.\mathrm{step}()$\;
+\end{algorithm}
+Tensor shapes are preserved from the baseline: encoder output is flattened to $B\times D$; within each class $c$, gated attention produces weights $\alpha\in\mathbb{R}^{M\times 1}$ and moments $(\mu_c,v_c)\in\mathbb{R}^D$. The added modules are the gated-attention MLP ($W_V,W_U,w$) and LayerNorm; no extra heads or decoders are introduced.
+\subsection{Slot + Gated Cross-Attention Surrogate}
+
+\paragraph{Slot inference as learned mixtures.}
+Slots $s^{(0)} \in \mathbb{R}^{S\times D}$ are initialized from a learned Gaussian
+$\mathcal{N}(\mu_\theta,\sigma_\theta^2 I)$ with trainable mean and log-variance.
+For class $c$, tokens $T_c \in \mathbb{R}^{B_c\times D}$ are normalized and
+projected following slot-attention updates \cite{slot_attention}:
+\begin{equation}
+	\label{eq:slot_attn_updates}
+	\begin{aligned}
+		\alpha^{(t)}
+		&=
+		\mathrm{softmax}\!\left(
+		\frac{T_c W_k (s^{(t-1)} W_q)^\top}{\sqrt{D}}
+		\right), \\[0.4em]
+		u^{(t)}
+		&=
+		\alpha^{(t)\top}(T_c W_v), \\[0.4em]
+		s^{(t)}
+		&=
+		\mathrm{GRU}\!\left(s^{(t-1)}, u^{(t)}\right)
+		+
+		\mathrm{MLP}\!\left(s^{(t-1)}\right),
+		\qquad t=1,\dots,T .
+	\end{aligned}
+\end{equation}
+LayerNorm and residuals are applied as in Slot Attention \cite{slot_attention}.
+Temperature $D^{1/4}$ smooths assignments.
+Slots act as amortized mixture components that adapt to class-specific dispersion
+without explicit density estimation.
+
+\paragraph{Gated cross-attention refinement.}
+After slots are obtained from the iterative slot-attention updates, tokens query
+these fixed slots via multi-head cross-attention (four heads), and gates are
+applied on the cross-attention residuals (not on the slot updates themselves) to
+control how strongly slots rewrite token features
+\cite{flamingo,vaswani_attention_2017}:
+\begin{equation}
+	\label{eq:gated_xattn}
+	\begin{aligned}
+		\hat T_c
+		&=
+		T_c
+		+
+		\tanh(\alpha_{\text{xattn}})
+		\,
+		\mathrm{CrossAttn}(T_c, S), \\[0.4em]
+		\tilde T_c
+		&=
+		\hat T_c
+		+
+		\tanh(\alpha_{\text{ffn}})
+		\,
+		\mathrm{FFN}(\hat T_c).
+	\end{aligned}
+\end{equation}
+Here $\alpha_{\text{xattn}}$ and $\alpha_{\text{ffn}}$ are learned scalars
+initialized to $0.1$ following Flamingo’s stabilized gating \cite{flamingo}.
+Gating prevents assignment collapse and modulates the strength of slot-token
+binding in early epochs.
+
+\paragraph{Dispersion and class penalty.}
+Responsibilities $r_{mk}$ are computed using cosine similarity with temperature
+$\beta$, following scaled dot-product attention
+\cite{vaswani_attention_2017,slot_attention}:
+\begin{equation}
+	\label{eq:responsibility}
+	r_{mk}
+	=
+	\mathrm{softmax}_k
+	\bigl(
+	\beta \,
+	\mathrm{cos}(\tilde T_{c,m}, s_k)
+	\bigr).
+\end{equation}
+
+Slot-wise moments are defined as
+\begin{equation}
+	\begin{aligned}
+		\mu_k
+		&=
+		\frac{\sum_m r_{mk}\,\tilde T_{c,m}}{\sum_m r_{mk}}, \\[0.5em]
+		v_k
+		&=
+		\frac{\sum_m r_{mk}\,(\tilde T_{c,m}-\mu_k)^2}{\sum_m r_{mk}} .
+	\end{aligned}
+\end{equation}
+
+Two gates modulate variance contributions.
+The per-dimension gate is
+\[
+g_d
+=
+\sigma\!\left(
+\mathrm{MLP}\bigl(\mathrm{LN}(\log v_k)\bigr)
+\right),
+\]
+and the signal-to-noise ratio (SNR) gate is
+\[
+g_{\text{snr},d}
+=
+\sigma\!\left(
+\mathrm{SNR}(v_k, \mu_k)
+\right).
+\]
+A soft thresholding is applied via
+\[
+\mathrm{softplus}\bigl(\log v_k - \log \tau\bigr).
+\]
+
+Slot masses are computed as
+\[
+m_k = \sum_m r_{mk},
+\]
+and are sharpened using an exponent $p$ (default $2.5$) to emphasize confident
+slots.
+
+The resulting class penalty is
+\begin{equation}
+	\label{eq:class_penalty}
+	\begin{aligned}
+		L_C^{\text{slot}}
+		&=
+		\frac{1}{C}
+		\sum_{c=1}^C
+		\sum_{k=1}^S
+		\frac{m_k^p}{\sum_{k'} m_{k'}^p}
+		\,
+		\frac{1}{D}
+		\sum_{d=1}^D
+		g_d \, g_{\text{snr},d} \\
+		&\quad \times
+		\mathrm{softplus}
+		\Bigl(
+		\beta_s
+		\bigl(
+		\log v_{k,d}
+		-
+		\log \tau
+		-
+		m
+		\bigr)
+		\Bigr).
+	\end{aligned}
+\end{equation}
+
+Here, \texttt{softplus} provides a smooth approximation of the hinge (ReLU),
+while $m$ and $\beta_s$ are learnable margin and slope parameters controlling
+the aggressiveness of penalizing variances below $\tau$.
+This formulation mirrors the implementation’s smoothed hinge on log-variance.
+
+The total loss is
+\[
+L = L_D + \lambda L_C^{\text{slot}}.
+\]
+Finally, a class-level gate down-weights batches with $B_c \le 1$ to avoid
+unstable statistics.
+
+\paragraph{Default configuration and sensitivity.} The exploratory configuration uses $S=8$, $T=3$, four heads, $\alpha_{\text{xattn}}=\alpha_{\text{ffn}}=0.1$, $p=2.5$, and $\tau$ tied to $\sigma^2$ \cite{slot_attention,flamingo}. Increasing $S$ or $T$ raises expressiveness but also instability and compute, matching observations in object-centric slot models \cite{slot_attention}. Empirically, $L_C^{\text{slot}}$ decreased slowly and privacy weakened relative to GMM, indicating that dispersion estimates were under-regularized; fusing slots with the simpler gated pooling (parallel or shortcut coupling) is the next step to stabilize variance \cite{ilse_gated_mil_2018}.
+
+Intuition for key knobs. The slot surrogate relies on token-to-slot assignments, so its behaviour is largely determined by how \emph{sharp} these assignments are. If assignments are too soft, every slot receives almost the same mass ($m_k$ becomes nearly uniform). In that case, slot-wise statistics become similar and $L_C^{\text{slot}}$ behaves like a weak averaged penalty, which tends to underestimate within-class diversity (and therefore provides weak privacy gradients). To avoid this, the exponent $p>1$ is used to sharpen slot masses. However, $p$ cannot be too large: it pushes almost all mass onto a single slot, which effectively recreates hard clustering and makes training sensitive and unstable.
+
+The cosine temperature $\beta$ offers another control knob: larger $\beta$ makes the softmax assignments more peaked, while smaller $\beta$ keeps them smoother. A moderate $\beta$ helps avoid both extremes (uniform assignments vs.\ near one-hot collapse). Finally, the gated cross-attention scales $\alpha_{\text{xattn}}$ and $\alpha_{\text{ffn}}$ decide how strongly the slot pathway is allowed to modify token features. Initializing them small keeps the slot branch as a gentle residual refinement early on, so the encoder features are not aggressively rewritten before the slot assignments stabilize.
+
+\paragraph{Pseudo-code and data flow (Slot + Gated Cross-Attention).}
+Algorithm~\ref{alg:slot_cem_update} restates the implemented SlotCrossAttentionCEM
+surrogate and its privacy-first update in a paper-style pseudocode form.
+
+\begin{algorithm}[H]
+\small
+\DontPrintSemicolon
+\caption{Privacy-first update with Slot + Gated Cross-Attention CEM surrogate}
+\label{alg:slot_cem_update}
+\KwIn{mini-batch $(x,y)$; encoder $F_e$; head $F_d$; optimizer $\mathcal{O}$; scheduler LR $\eta$; epoch $e$; warmup $E_w=3$; loss weight $\lambda$; regularization strength $\sigma$; \texttt{var\_threshold} $\rho$; CEM scale $s_{\text{cem}}=0.25$; slots $S{=}8$, heads $H{=}4$, iterations $T{=}3$; flag \texttt{random\_ini\_centers}}
+\KwOut{updated parameters of $F_e$, $F_d$, and SlotCrossAttentionCEM surrogate}
+$z \leftarrow F_e(x)$; $Z \leftarrow \mathrm{vec}(z)$; $U \leftarrow \mathrm{unique}(y)$; $B \leftarrow |x|$\;
+$D \leftarrow \mathrm{dim}(Z)$\;
+$\texttt{use\_att} \leftarrow (\neg\texttt{random\_ini\_centers}) \wedge (\lambda>0) \wedge (e>E_w)$\;
+$\ell_{\text{cem}} \leftarrow 0$\;
+\If{$\texttt{use\_att}$ \textbf{and} $Z$ has no NaN/Inf}{
+    \If{\texttt{attention\_cem} is uninitialized}{
+        Initialize \texttt{attention\_cem} with $(D,S{=}8,H{=}4,T{=}3,\epsilon_{\text{var}}{=}10^{-4},\rho,\sigma)$ and register its parameters in $\mathcal{O}$\;
+    }
+    $\tau \leftarrow \max(\rho\cdot\sigma^2,10^{-8}) + \gamma$ with $\gamma=10^{-6}$\;
+    $\texttt{total} \leftarrow 0$; $\texttt{wgt} \leftarrow 0$\;
+    \ForEach{$c \in U$}{
+        $Z_c \leftarrow \{Z_b: y_b=c\}$; $M \leftarrow |Z_c|$\;
+        \If{$M \le 2$}{\textbf{continue}}
+        $X \leftarrow \mathrm{LayerNorm}(Z_c)$\;
+        $s^{(0)} \sim \mathcal{N}(\mu_\theta,\sigma_\theta^2 I)$\;
+        $S_c \leftarrow \mathrm{SlotAttn}(X, s^{(0)}; T)$\;
+        $\tilde X \leftarrow \mathrm{CrossAttn}(X,S_c;\tanh(\alpha_{\text{xattn}}),\tanh(\alpha_{\text{ffn}}))$\;
+        $r \leftarrow \mathrm{softmax}\big(\beta_a\,\cos(\mathrm{norm}(X),\mathrm{norm}(S_c))\big)$\;
+        $m \leftarrow \sum_m r_{m,:} + \epsilon$; $\mu_s \leftarrow (r^\top \tilde X)/m$; $v_s \leftarrow \sum_m r_{m,:}(\tilde X_m-\mu_s)^2/m$\;
+        $v_s \leftarrow \max(v_s,\epsilon_{\text{var}})$; $\log v_s \leftarrow \log(v_s+\gamma)$\;
+        $g_d \leftarrow \sigma(\mathrm{MLP}(\mathrm{LN}(\log v_s)))$\;
+        $\text{snr} \leftarrow v_s/(\mu_s^2+\epsilon)$; $g_{\text{snr}} \leftarrow \sigma(\beta_{\text{snr}}(\text{snr}-t_{\text{snr}}))$\;
+        $h \leftarrow \mathrm{softplus}\big(\beta_s(\log v_s-\log\tau-m_0)\big)/(\beta_s+\epsilon)$\;
+        $q \leftarrow g_d \odot g_{\text{snr}} \odot h$\;
+        $w \leftarrow \mathrm{norm}\big((m/M)^{p_s}\big)$; $\ell_c \leftarrow \mathrm{mean}_d\sum_s w_s q_{s,d}$\;
+        $g_c \leftarrow \sigma(a_c(M/B-b_c))$\; $\ell_c \leftarrow g_c\,\ell_c$\;
+        $\texttt{total} \leftarrow \texttt{total} + (M/B)\,\ell_c$; $\texttt{wgt} \leftarrow \texttt{wgt} + (M/B)$\;
+    }
+    $\ell_{\text{cem}} \leftarrow s_{\text{cem}}\cdot \texttt{total}/\max(\texttt{wgt},10^{-8})$\;
+}
+$\tilde z \leftarrow z$; \If{\texttt{Gaussian noise enabled}}{$\tilde z \leftarrow z + \sigma\cdot \mathcal{N}(0,I)$}\;
+$g \leftarrow F_d(\tilde z)$; $\ell_{\text{task}} \leftarrow \mathrm{CE}(g,y)$\;
+\If{$\texttt{use\_att}$ \textbf{and} $\ell_{\text{cem}}$ requires grad}{
+    Backprop $\ell_{\text{cem}}$; cache encoder and surrogate gradients; $\mathcal{O}.\mathrm{zero\_grad}()$\;
+}
+Backprop $\ell_{\text{task}}$\;
+\If{cached encoder gradients exist}{
+    $s_{\eta} \leftarrow 1$ if $\eta<4.1\times 10^{-4}$ else $0.001/\eta$\;
+    Merge privacy gradients into encoder: $\nabla \leftarrow \nabla + \lambda\,s_{\eta}\,\nabla \ell_{\text{cem}}$\;
+    Restore cached surrogate gradients\;
+}
+$\mathcal{O}.\mathrm{step}()$\;
+\end{algorithm}
+
+
+\subsection{Numerical Stability and Regularization}
+Both surrogates share safeguards: $\epsilon=10^{-6}$ in variances and logs; skipping classes with too few samples (e.g., $B_c\le 1$ for gated, $B_c\le 2$ for slots); NaN/Inf checks that zero the surrogate loss while keeping the graph intact; and a short warmup (three epochs in current code) before activating the surrogate \cite{he_edgecloud_iotj2020}. In addition to epoch warmup, the slot surrogate applies an early shutoff that returns a zero $L_C$ for the first $N$ forward calls (and when gate statistics indicate overly broad activation), to suppress unstable privacy gradients while keeping the computation graph connected for consistent training logic. Hinge and softplus thresholds preserve gradients near decision boundaries, avoiding dead zones \cite{noise_arl}. Class-balanced normalization prevents frequent labels from dominating $L_C$, echoing class-balancing practices in split-MIA evaluations \cite{he_collab_mia_acsac19}. Exponential moving averages or gradient clipping are potential future stability tweaks if needed.
+
+\subsection{Algorithmic Integration}
+Each training step follows a deterministic privacy-first order. For the gated surrogate:
+\begin{enumerate}[leftmargin=1.2em]
+    \item Forward: $z=F_e(x)$, $\tilde z=z+\varepsilon$, logits $g=F_d(\tilde z)$.
+    \item Compute $L_D$; group $\tilde z$ by class; compute $L_C^{\text{gated}}$ from gated moments.
+    \item Backpropagate $L_C^{\text{gated}}$; save encoder and gate gradients.
+    \item Zero gradients; backpropagate $L_D$.
+    \item Add saved gradients (optionally scaled by the current learning rate) to encoder parameters; take the optimizer step.
+\end{enumerate}
+The slot surrogate uses the same scaffold with $L_C^{\text{slot}}$. This schedule matches CEM’s gradient ordering, eliminates per-epoch clustering, and keeps inference unchanged \cite{cem,he_collab_mia_acsac19}.
+
+\subsection{Computation and Memory Profile}
+The gated surrogate adds $O(Dh)$ parameters (projection plus gate vector) and $O(BD)$ flops; memory overhead is negligible \cite{hu_senet_2018}. The slot + gated cross-attention surrogate adds $O(SD)$ parameters, $O(TBSD)$ flops, and $O(BS)$ attention memory; with $S=8,T=3$ it remains tractable on RTX 5880 Ada but is heavier than gated pooling \cite{slot_attention}. Neither surrogate affects deployment cost: $L_C$ is used only in training, and the encoder–decoder graph at inference matches the baseline footprint \cite{he_edgecloud_iotj2020}.
+
+\subsection{Hyperparameters and Planned Ablations}
+Gated-attention axes: projection width $h$, threshold $\tau$ relative to $\sigma^2$, gate initialization scale, and loss weight $\lambda$ (fixed at 16 for fair comparison) \cite{ilse_gated_mil_2018}. Slot axes: number of slots $S$, iterations $T$, head count, gate initializations $\alpha_{\text{xattn}},\alpha_{\text{ffn}}$, sharpening power $p$, temperature $\beta$, and class gates \cite{slot_attention,flamingo}. Planned ablations include (i) sweeping $\sigma$ and $\tau$ jointly to calibrate the hinge/softplus boundary; (ii) removing SNR gates to test their contribution; (iii) varying $p$ to control slot mass sharpening; and (iv) fusing slots with gated pooling in parallel or via shortcut to stabilize variance while retaining multimodal capacity \cite{vaswani_attention_2017}.
+
+\subsection{Reproducibility Controls}
+To keep results attributable to the surrogate, the following are fixed across runs: backbone, cut layer, noise level, optimizer, schedule, batch size, and attacker architecture \cite{he_collab_mia_acsac19,he_edgecloud_iotj2020}. Seeds, data order, and noise sampling are deterministic \cite{noise_arl}. Under these controls, the observed pattern is consistent: gated attention improves privacy with a modest accuracy drop, whereas slot + gated cross-attention remains competitive on accuracy but weakens privacy under the default configuration.
+% =========================================================
+\section{Experiments and Results Analysis}
+\subsection{Experimental Setup}
+All three runs follow the fixed CIFAR-10 split-learning protocol: VGG11-BN-SGM cut after layer 4, smashed-data bottleneck 8 channels, additive Gaussian noise $\sigma=0.025$, loss weight $\lambda=16$, batch size 128, SGD with a multi-step LR schedule (milestones 60/120/180/210/260\footnote{Milestone 260 is kept only for runs longer than 240 epochs; it is inactive here.}, $\gamma=0.2$) for 240 epochs on a single NVIDIA RTX 5880 Ada. The white-box MIA reconstructor (Adam, 50 attack epochs with cosine-annealed LR) consumes the same $\tilde z$ and is evaluated on the target client, consistent with split-attack practice. Cut position, noise, optimizer, and attacker are identical across methods to isolate the surrogate effect, following best-practice fairness guidelines for comparative robustness studies \cite{he_collab_mia_acsac19,he_edgecloud_iotj2020,noise_arl}.
+
+\textbf{Scripts and key knobs.} Baseline: $\lambda=16$, regularization strength 0.025, SCA\_new adversarial regularizer 0.3, bottleneck option \texttt{noRELU\_C8S1}, var\_threshold 0.125, MultiStep LR from 0.05, seed 125. Gated-attention run inherits the same backbone/cut/noise and keeps $\lambda=16$ (log shows warmup at $\lambda\approx 8$ then $\lambda=16$ after LR decay). Slot + gated cross-attention keeps $\lambda=16$ as well to remain comparable to the default script. All runs use the same attack configuration: 50 attack epochs, GAN autoencoder \texttt{res\_normN8C64} \cite{goodfellow_gan_2014}, attack loss default MSE unless specified otherwise, average\_time=1.
+
+\textbf{Role of auxiliary knobs.} \texttt{SCA\_new} adversarial regularizer (0.3) is the same defense term used in the published baseline; it adversarially shapes smashed features against an auxiliary discriminator \cite{noise_arl} and is held fixed to isolate the effect of the entropy surrogate. The bottleneck option \texttt{noRELU\_C8S1} reduces channel count to 8 without an extra ReLU, matching the baseline’s split footprint and bandwidth; changing it would alter the attack surface, so it is frozen for comparability \cite{he_edgecloud_iotj2020}. The variance threshold 0.125 appears in both the baseline and surrogates as the target floor for smashed-data dispersion; for gated attention it aligns the hinge to the noise level, and for slots it sets the softplus threshold.
+
+\textbf{Training/attack timeline.} Classification training spans 240 epochs; attack training spans 50 epochs per method, matching prior attacker-strength baselines \cite{he_collab_mia_acsac19}. The logs show per-epoch Prec@1 progression and attack-side prediction accuracy progression. Inference-time footprint is identical because $L_C$ is used only during training; the deployed encoder–decoder equals the baseline \cite{cem}.
+
+\textbf{Runtime/throughput.} On RTX 5880 Ada, one classifier epoch costs around 8–10 s (depending on phase and surrogate); attack epochs cost around 1.2–1.9 s for feature inference plus around 0.25–0.38 s for clustering/surrogate statistics (from log timestamps), aligned with prior split-inference overhead reports \cite{he_edgecloud_iotj2020}. These timings confirm the surrogates introduce negligible overhead relative to the baseline training loop \cite{noise_arl}.
+
+\subsection{Overall Results}
+Utility and privacy metrics are summarized in Figure~\ref{fig:overview}. Baseline (GMM) reaches 85.18\% top-1 and MIA MSE/SSIM/PSNR of 0.0436 / 0.432 / 13.60. Gated attention achieves 84.34\% accuracy with improved privacy (0.0473 / 0.411 / 13.25), reflecting the effect of variance-floor gating seen in obfuscation defenses \cite{noise_arl}. Slot + gated cross-attention attains 84.69\% accuracy but weaker privacy (0.0393 / 0.459 / 14.06), consistent with instability reports for mixture-like surrogates on shallow features \cite{slot_attention}. Under identical threat and training conditions, the gated surrogate offers the best privacy–utility trade-off; the slot branch retains slightly higher accuracy than gated attention but leaks more \cite{he_collab_mia_acsac19,he_edgecloud_iotj2020}. SSIM/PSNR follow the standard image quality definitions in \cite{wang_bovik_ssim_2004}, and the privacy trend (higher MSE, lower SSIM) matches expectations from stronger regularization in split defenses \cite{noise_arl,patrol}.
+
+\begin{table}[H]
+\centering
+\small
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Method} & \textbf{Prec@1 (\%)} & \textbf{MSE} $\uparrow$ & \textbf{SSIM} $\downarrow$ & \textbf{PSNR (dB)} $\downarrow$ \\
+\hline
+Baseline (GMM) & \textbf{85.18} & 0.0436 & 0.432 & 13.60 \\
+Gated attention & 84.34 & \textbf{0.0473} & \textbf{0.411} & \textbf{13.25} \\
+Slot + gated cross-attn & 84.69 & 0.0393 & 0.459 & 14.06 \\
+\hline
+\end{tabular}
+\caption{Summary of utility and privacy metrics on CIFAR-10 (fixed cut/noise/attacker). Gated attention yields the strongest privacy (MSE $\uparrow$, SSIM/PSNR $\downarrow$) with only a modest accuracy drop.}
+\label{tab:overall_metrics}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{fig_metrics_overview.png}
+    \caption{Utility and privacy comparison on CIFAR-10 (higher MSE, lower SSIM indicate stronger privacy). Hardware: RTX 5880 Ada; identical cut/noise/attacker across runs.}
+    \label{fig:overview}
+\end{figure}
+
+\subsection{Attack Training Dynamics}
+Figure~\ref{fig:attack} plots the MIA decoder’s prediction accuracy over 50 attack epochs. All methods converge to mid-20\% accuracy, consistent with noisy smashed data \cite{he_collab_mia_acsac19,he_edgecloud_iotj2020}. Gated attention does not slow attack convergence but still raises reconstruction error (higher MSE, lower SSIM), showing that dispersion—not just confusing the attack classifier—drives its privacy gain \cite{cem,noise_arl}. The slot variant shows slightly lower attack accuracy early on yet leaks more (lower MSE, higher SSIM), indicating insufficient variance inflation in the slot branch, a known challenge for unstable mixture-like surrogates \cite{slot_attention,patrol}.
+
+\subsection{Training Trajectory and Checkpoints}
+Across 240 classifier epochs, each method saves a best checkpoint (the script’s \texttt{best} model) which is then used for MIA evaluation. Under this protocol, the achieved Prec@1 is 85.18\% for the baseline, 84.34\% for gated attention, and 84.69\% for slot + gated cross-attention, consistent with the stability expected from the fixed multi-step schedule in the reproduced pipeline \cite{cem,simonyan_vgg_2015}. Attack-side prediction accuracy curves plateau around 24–26\% for gated/slot and $\sim$24\% for baseline, consistent with prior split-attack training curves \cite{he_collab_mia_acsac19,he_edgecloud_iotj2020}. The decisive signal comes from reconstruction metrics: gated attains the highest MSE (0.0473) and lowest SSIM (0.4109), baseline sits in the middle (0.0436 / 0.4316), and slot lags (0.0393 / 0.4593). PSNR follows the same ordering (gated 13.25 dB $<$ baseline 13.60 dB $<$ slot 14.06 dB), reinforcing that gated attention makes reconstructions visually worse despite similar attack accuracy \cite{cem,noise_arl,wang_bovik_ssim_2004}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{fig_attack_curves.png}
+    \caption{MIA prediction accuracy during attack training (lower is better). Despite similar attack accuracy endpoints, the gated surrogate yields higher reconstruction error than baseline; the slot surrogate reduces attack accuracy slightly but still leaks more.}
+    \label{fig:attack}
+\end{figure}
+
+\subsection{Failure Analysis on Slot Branch}
+The logs reveal that even under the default entropy weight ($\lambda=16$), slot responsibilities sharpened slowly: responsibilities and slot masses remain diffuse, so per-slot variances $v_k$ are not pushed above the noise floor \cite{slot_attention}. Cosine-temperature and gate initializations (cross-attn gates at 0.1) may be too conservative, leading to weak token–slot binding early on; conversely, increasing temperature without anchoring variance risks slot collapse \cite{vaswani_attention_2017}. The SNR and variance gates stay near the linear regime, so the softplus threshold rarely fires, limiting gradient magnitude on $v_k$ \cite{flamingo}. Together these factors explain why SSIM rises (weaker privacy) despite reasonable attack accuracy: dispersion is not sufficiently inflated. The planned fusion with gated pooling (parallel/shortcut) is intended to inject a stronger variance floor while slots capture modes, mitigating these failure modes \cite{ilse_gated_mil_2018}.
+
+\subsection{Additional Visualizations}
+To further illustrate privacy signals, Figure~\ref{fig:psnr} shows PSNR (lower is better privacy), and Figure~\ref{fig:tradeoff} plots the accuracy–privacy trade-off (MSE/SSIM vs top-1). Gated attention lands in the favorable quadrant (higher MSE, lower SSIM) with only a small accuracy delta; the slot variant sits closer to the baseline on accuracy but drifts toward weaker privacy, mirroring trends in other obfuscation-vs-utility studies \cite{noise_arl,patrol}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{fig_psnr_bar.png}
+    \caption{Privacy via PSNR (dB, lower is better). Gated attention yields the lowest PSNR, indicating harder reconstructions for the attacker.}
+    \label{fig:psnr}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{fig_tradeoff.png}
+    \caption{Accuracy–privacy trade-off. Left: accuracy vs MSE (higher is better privacy); Right: accuracy vs SSIM (lower is better privacy). Gated attention moves up/right in MSE space and down in SSIM with a modest accuracy loss; slot remains closer to baseline on accuracy than gated attention but loses privacy.}
+    \label{fig:tradeoff}
+\end{figure}
+
+\subsection{Takeaways and Next Steps}
+Across identical scripts and hardware, Method 1 (gated attention) is the only surrogate that strengthens privacy with a modest utility drop, consistent with the stabilizing role of gates in prior attention modules \cite{hu_senet_2018,woo_cbam_2018}. Method 2 highlights that additional expressiveness alone does not guarantee robustness without stable variance control \cite{slot_attention}. Immediate next steps: sweep slot/gate hyperparameters, fuse slots with gated pooling (parallel/shortcut) to stabilize dispersion, and extend evaluation to additional cuts/datasets to test generality, following evaluation practices in split defenses \cite{he_edgecloud_iotj2020,noise_arl}.
 
 % =========================================================
-\section{Preliminary Results and Analysis}
-% 中期报告不求结果很大，但要“有证据、有对照、有解释”。
-%
-% 强烈建议一个主表：
-% Table: CIFAR-10 (default protocol)
-%   - Baseline (GMM surrogate)
-%   - Yours (Gated-Attention CEM)
-%   - Slot+Gated Cross-Attention (default setting)
-%
-% 再加 1 小节解释：
-% - 为什么 1 更好（从优化稳定性/可微性/类内方差控制角度）
-% - 为什么 2 目前不如 baseline（可能原因列表）
-%   例：slot 数/初始化、cross-attn 门控位置、loss 权重耦合、训练资源不足等
-% - 清晰声明：目前只在默认脚本上测试的范围边界。
+\section{Challenges Reflection and Progress Management}
+\label{sec:challenges_progress_management}
+In the proposal, the near-term milestones before the interim deadline were: (i) establish a clear threat model and literature baseline for collaborative inference and model inversion; (ii) reproduce Conditional Entropy Maximization (CEM) under the default protocol; and (iii) implement and benchmark at least one alternative surrogate of $\mathcal{H}(x|z)$ under a fixed attacker \cite{cem,he_collab_mia_acsac19,he_edgecloud_iotj2020}. The longer-term objective remains unchanged: deliver a distribution-agnostic surrogate that improves the privacy--utility trade-off over CEM across four datasets under comparable split and compute constraints \cite{cem,noise_arl,patrol}.
 
-\subsection{Main Quantitative Comparison}
-% TODO: add a table later.
+\subsection{Progress Against Workplan}
+\paragraph{Completed deliverables (with measurable outcomes).}
+Baseline CEM reproduction on CIFAR-10 has been completed using the published cut/noise protocol, matching the expected utility and privacy levels (Prec@1 85.18\%, MSE 0.0436, SSIM 0.432, PSNR 13.60), and thus providing a trustworthy reference point for subsequent controlled comparisons \cite{cem,he_edgecloud_iotj2020}. Building on this baseline, two attention-based surrogates of conditional entropy were implemented and evaluated under identical training and attacker budgets (240 classifier epochs; 50 white-box attack epochs with fixed scripts and schedules) on a single RTX 5880 Ada \cite{he_collab_mia_acsac19}. Method 1 (gated attention) improves privacy relative to the baseline (MSE 0.0473 $\uparrow$, SSIM 0.411 $\downarrow$, PSNR 13.25 dB $\downarrow$) with a small utility drop (84.34\%), whereas Method 2 (slot + gated cross-attention) achieves competitive utility (84.69\%) but underperforms on privacy (MSE 0.0393 $\downarrow$, SSIM 0.459 $\uparrow$), motivating the fusion direction described below \cite{slot_attention,flamingo,hu_senet_2018}.
 
-\subsection{Why Method 1 Improves Over the Baseline}
-% TODO
+\paragraph{Planned milestones vs current status.}
+Table~\ref{tab:workplan_progress} and Figure~\ref{fig:gantt} summarize planned vs achieved work packages up to the interim deadline. The main deviation is not a schedule slip but an outcome mismatch: the slot-based branch consumed the intended implementation window yet did not translate additional expressiveness into higher conditional entropy under the fixed threat model, so the next phase prioritizes fusion and ablations that preserve the gated baseline as a stable anchor \cite{he_collab_mia_acsac19,noise_arl}.
 
-\subsection{Why Method 2 Underperforms So Far}
-% TODO: list hypotheses + supporting observations.
+\begin{table}[H]
+\centering
+\small
+\setlength{\tabcolsep}{2pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{|p{0.25\textwidth}|p{0.16\textwidth}|p{0.43\textwidth}|p{0.12\textwidth}|}
+\hline
+\textbf{Work package} & \textbf{Planned} & \textbf{Measurable Outcome} & \textbf{Status} \\
+\hline
+Literature review \& threat model & Sep--Nov 2025 & Surveyed split inference and MIAs; curated bibliography and threat model used throughout the report & Completed \\
+\hline
+Baseline reproduction & Oct--Nov 2025 & CIFAR-10 reproduction: Prec@1 85.18\%, MSE 0.0436, SSIM 0.432, PSNR 13.60 & Completed \\
+\hline
+Method 1: gated-attention surrogate & Nov--Dec 2025 & Strongest privacy among tested variants: MSE 0.0473, SSIM 0.411, PSNR 13.25; Prec@1 84.34\% & Completed \\
+\hline
+Method 2: slot + gated cross-attention & Nov--Dec 2025 & Utility competitive (84.69\%) but privacy weaker (MSE 0.0393, SSIM 0.459); failure analysis drafted & Completed \\
+\hline
+Fusion \& ablations (integration) & Dec 2025--Feb 2026 & In progress: parallel/shortcut fusion prototypes and controlled ablations under the fixed attacker & In progress \\
+\hline
+Cross-dataset evaluation (4 datasets) & Jan--Apr 2026 & Planned: extend protocol beyond CIFAR-10 (e.g., SVHN, FaceScrub) with identical cut/noise/attacker & Planned \\
+\hline
+\end{tabular}
+\caption{Progress against the proposal workplan up to the interim deadline, anchored by measurable outcomes.}
+\label{tab:workplan_progress}
+\end{table}
 
-% =========================================================
-\section{Progress Against Workplan}
-% 必写：原计划 vs 实际。
-% 你可以用：
-% - 一个小表格（Task / Planned / Achieved / Notes）
-% - 或 Gantt 图（更直观）
-%
-% 这里要写“可量化进展”。
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{artifacts/gantt_midterm_proposal.png}
+    \caption{Updated proposal-style Gantt chart showing completed (green), in-progress (orange), and planned (gray) work packages up to the interim deadline.}
+    \label{fig:gantt}
+\end{figure}
 
-\subsection{Completed Work}
-\begin{itemize}[leftmargin=1.5em]
-    \item % TODO: Reproduced/understood baseline pipeline.
-    \item % TODO: Implemented gated-attention CEM surrogate.
-    \item % TODO: Ran CIFAR-10 default protocol and observed improvement.
-    \item % TODO: Implemented Slot + Gated Cross-Attention version (initial attempt).
-\end{itemize}
+\subsection{Challenges, Risks, and Mitigation}
+A major technical challenge is that shallow smashed features are simultaneously high-dimensional and noise-perturbed, making mixture fitting and mixture-like responsibilities brittle \cite{cem,slot_attention}. The slot branch appears under-regularized in this setting: it can preserve discriminative structure for the main task, yet dispersion control is not consistently activated, leading to lower reconstruction error (MSE $\downarrow$) despite similar attack-side prediction accuracy \cite{he_collab_mia_acsac19}. This motivates the fusion plan where gated pooling provides a stable variance floor while slots contribute controlled multi-modality \cite{ilse_gated_mil_2018,flamingo}.
 
-\subsection{Original Plan vs Current Status}
-% TODO: add a small table.
+The principal schedule risks and mitigations are as follows. First, fusion may remain unstable and delay cross-dataset evaluation; mitigation is to prioritize a parallel fusion that retains the gated baseline as a safe fallback, and to stage ablations that remain informative even if fusion underperforms (e.g., varying thresholds, gate width, and loss scales) \cite{he_resnet_2016,huang_densenet_2017}. Second, current conclusions may be CIFAR-10-specific; mitigation is to stage additional datasets sequentially (starting with SVHN and FaceScrub) using the frozen protocol, reporting deltas relative to CIFAR-10 to detect regressions early \cite{he_edgecloud_iotj2020,netzer_svhn_2011,ng_facescrub_2014}. Third, privacy gains may depend on attacker design; mitigation is to include at least one stronger reconstructor (e.g., perceptual-loss decoder) while keeping the white-box assumption unchanged \cite{johnson_perceptual_2016,he_collab_mia_acsac19}. Progress will be monitored with the same measurable criteria used so far: Prec@1 for utility, and MSE/SSIM/PSNR for privacy, with all comparisons made under identical budgets and scripts \cite{wang_bovik_ssim_2004,psnr}.
 
-\subsection{Updated Plan}
-% TODO: bullet milestones for Jan--Apr.
-% Example milestones:
-% M1: Hyper-parameter sweep for Method 1 and 2.
-% M2: Fusion design (parallel/serial/shortcut).
-% M3: Expanded evaluation (more datasets/attacks).
-% M4: Ablations + write-up.
+\subsection{Next Steps}
+\textbf{Fusion design and verification (Dec 2025--Jan 2026).} The priority is to fuse slots with gated pooling so that slots model multi-modality while gated pooling enforces a variance floor. Two variants will be implemented: (i) parallel fusion (slots and gated pooling computed in parallel and aggregated by learned weights); (ii) shortcut/residual fusion where slot dispersion is injected as a residual into the gated branch, leveraging residual couplings that stabilize deep networks \cite{he_resnet_2016,huang_densenet_2017}. Both variants will be rerun on CIFAR-10 under the fixed white-box attacker to test whether privacy improves without harming accuracy \cite{slot_attention,ilse_gated_mil_2018,hu_senet_2018}.
 
-% Optional Gantt placeholder
-% \begin{figure}[h]
-% \centering
-% \includegraphics[width=0.9\textwidth]{gantt_placeholder.png}
-% \caption{Updated Gantt chart for the remainder of the project.}
-% \end{figure}
+\textbf{Ablations and stability sweeps (Jan--Feb 2026).} Planned sweeps include slot count, assignment temperature, gate scales, softplus margin/slope, and fusion weights, plus removal of SNR gates to isolate their effect. These will be evaluated under the same protocol to map stability/expressiveness trade-offs and to identify robust defaults for later datasets \cite{vaswani_attention_2017,flamingo,he_resnet_2016}.
 
-% =========================================================
-\section{Reflection and Risk Management}
-% 这是把“做项目的人味”写出来的地方，也是 rubric 高分点。
-%
-% 必写：
-% - 你遇到的真实问题
-% - 你怎么解决
-% - 你学到了什么
-% - 风险与缓解策略（最好 3--5 条）
+\textbf{Composing defenses under a fixed threat model (Feb--Mar 2026).} Test whether combining the fused surrogate with lightweight noise/adversarial representation learning \cite{noise_arl} or distance-correlation penalties \cite{distcorr} yields further privacy gains, while keeping cut/noise/attacker fixed to avoid confounds. Pruning-style regularization \cite{patrol} will be explored only if compute allows, with fusion designs chosen to keep the budget consistent with edge constraints \cite{he_edgecloud_iotj2020}.
 
-\subsection{Key Challenges So Far}
-\begin{itemize}[leftmargin=1.5em]
-    \item % TODO
-    \item % TODO
-\end{itemize}
+\textbf{Cross-dataset evaluation toward the four-dataset target (Mar--Apr 2026).} Extend evaluation beyond CIFAR-10 (e.g., SVHN and FaceScrub first) with the same cut/noise/attacker to test robustness to domain shift. Deltas relative to CIFAR-10 will be reported for each surrogate to assess transferability and to prioritize knobs that generalize \cite{he_edgecloud_iotj2020,netzer_svhn_2011,ng_facescrub_2014}.
 
-\subsection{What I Learned}
-% TODO
-
-\subsection{Risks and Mitigation}
-\begin{itemize}[leftmargin=1.5em]
-    \item \textbf{Risk:} % TODO
-          \textbf{Mitigation:} % TODO
-    \item \textbf{Risk:} % TODO
-          \textbf{Mitigation:} % TODO
-\end{itemize}
+\textbf{Attacker variants and robustness checks (Apr 2026).} Add one stronger attacker (e.g., perceptual-loss decoder \cite{johnson_perceptual_2016}) to ensure improvements are not tied to a single loss, while keeping the white-box assumption fixed \cite{he_collab_mia_acsac19}. If needed, a generative-prior variant can be tested (e.g., GAN-based) to probe sensitivity to stronger priors \cite{goodfellow_gan_2014}.
 
 % =========================================================
 \section{Conclusion}
-% 3--6 句即可：
-% - 重申 aim
-% - 总结目前最硬的结论：Method 1 works better under default CIFAR-10.
-% - Method 2 is promising but currently underperforms under default setting.
-% - 下一步明确聚焦“融合两者 + 更系统评测”。
+This report investigated replacing the Gaussian-mixture surrogate of $\mathcal{H}(x|z)$ in CEM with attention-based, distribution-agnostic alternatives under a fixed split-learning threat model. Reproducing the baseline and two surrogates shows that gated attention is the only variant that materially improves privacy (MSE $\uparrow$, SSIM/PSNR $\downarrow$) while keeping top-1 accuracy within about 1\% of the reproduced baseline (85.18\% vs.\ 84.34\%), whereas the exploratory slot + gated cross-attention remains competitive on accuracy (84.69\%) but under-regularizes dispersion. The findings support the hypothesis that stable, moment-based gating is more reliable than EM fitting or unconstrained slots on shallow, noisy features, and they highlight the need for variance anchoring when modeling multi-modality. Immediate priorities are to fuse slots with gated pooling (parallel/shortcut or residual coupling), sweep fusion-specific hyperparameters, and extend evaluation to additional datasets/attackers to confirm generality under identical architectural and noise budgets. With a standardized protocol, deterministic scripts, and updated Gantt plan in place, the project is on track to deliver a fused surrogate and broader evaluation by the final submission.
 
-% TODO
+Methodologically, the work kept architecture, cut position, noise variance, attacker strength, and training schedule fixed, so observed deltas can be causally attributed to the entropy surrogate rather than to other changes. Privacy was assessed with MSE/SSIM/PSNR following standard image-quality metrics, and fairness was enforced by identical attack scripts across runs. Three concrete contributions anchor this interim stage. First, the CEM baseline was faithfully reproduced under the published cut/noise/optimizer settings, establishing a trustworthy reference for privacy–utility trade-offs on CIFAR-10. Second, a gated-attention surrogate replaced GMM fitting with differentiable, class-wise variance control, yielding the best privacy metrics to date (MSE 0.0473, SSIM 0.411, PSNR 13.25) with only a minor Prec@1 drop relative to baseline (84.34\% vs.\ 85.18\%), and doing so without increasing inference cost. Third, an exploratory slot + gated cross-attention surrogate remained competitive on accuracy (84.69\%) but exposed the limits of unconstrained mixture-like modeling on shallow features (MSE 0.0393, SSIM 0.459), motivating the forthcoming fusion design.
+
+Key risks and mitigations are explicit: (i) the slot branch is under-regularized without a variance floor, so variance anchoring is needed to prevent privacy leakage; (ii) current results may overfit CIFAR-10, so they must be stress-tested on additional datasets and stronger attackers; and (iii) variance thresholds tied to injected noise must be revalidated for each surrogate to keep privacy pressure calibrated. The updated Gantt reflects completed literature/baseline/gated milestones, in-progress fusion/ablations, and planned cross-dataset evaluations, aligning deliverables with the original proposal timeline.
+
+Looking ahead, the fusion of slots with gated pooling (parallel/shortcut or residual) will test whether classification utility and privacy can be combined within similar training budget. Extending the fixed-threat protocol to additional datasets and attacker variants will probe generality, while ablations on $\tau$, gate scales, and slot temperature will map the stability landscape. These steps aim to produce a deployable, attacker-agnostic surrogate that surpasses the original baseline on both privacy and utility under realistic edge–cloud constraints.
 
 % =========================================================
+\clearpage
 \bibliographystyle{plain}
 \bibliography{references}
-
-% If you don't want BibTeX yet, you can comment above and use manual references.
-
-% =========================================================
-\appendix
-\section{Additional Details}
-% 长代码/更多结果/更多图放这里。
 
 \end{document}
