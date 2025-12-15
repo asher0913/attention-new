@@ -56,6 +56,12 @@ Arthur~P. Dempster, Nan~M. Laird, and Donald~B. Rubin.
 \newblock {\em Journal of the Royal Statistical Society: Series B},
   39(1):1--38, 1977.
 
+\bibitem{8119183}
+Benedikt Dietich, Nadja Peters, Sangyoung Park, and Samarjit Chakraborty.
+\newblock Estimating the limits of cpu power management for mobile games.
+\newblock In {\em 2017 IEEE International Conference on Computer Design
+  (ICCD)}, pages 1--8, 2017.
+
 \bibitem{patrol}
 Shiwei Ding, Lan Zhang, Miao Pan, and Xiaoyong Yuan.
 \newblock Patrol: Privacy-oriented pruning for collaborative inference against
@@ -211,11 +217,6 @@ Francesco Locatello, Dirk Weissenborn, Thomas Unterthiner, Aravindh Mahendran,
 \newblock Object-centric learning with slot attention.
 \newblock In {\em Advances in Neural Information Processing Systems (NeurIPS
   2020)}, 2020.
-
-\bibitem{loshchilov_hutter_2017}
-Ilya Loshchilov and Frank Hutter.
-\newblock {SGDR}: Stochastic gradient descent with warm restarts.
-\newblock 08 2016.
 
 \bibitem{lu_vilbert_2019}
 Jiasen Lu, Dhruv Batra, Devi Parikh, and Stefan Lee.

@@ -1,31 +1,32 @@
-This is BibTeX, Version 0.99d (TeX Live 2025)
+This is BibTeX, Version 0.99d
 Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: main.aux
+Reallocating 'name_of_file' (item size: 1) to 6 items.
 The style file: plain.bst
+Reallocating 'name_of_file' (item size: 1) to 11 items.
 Database file #1: references.bib
 Warning--entry type for "beltagy_longformer_2020" isn't style-file defined
---line 268 of file references.bib
-Warning--empty booktitle in loshchilov_hutter_2017
+--line 535 of file references.bib
 You've used 54 entries,
             2118 wiz_defined-function locations,
-            760 strings with 16334 characters,
-and the built_in function-call counts, 24967 in all, are:
-= -- 2306
-> -- 1552
-< -- 25
-+ -- 611
-- -- 554
-* -- 1791
-:= -- 3920
+            761 strings with 16435 characters,
+and the built_in function-call counts, 25128 in all, are:
+= -- 2322
+> -- 1562
+< -- 26
++ -- 615
+- -- 558
+* -- 1805
+:= -- 3942
 add.period$ -- 159
 call.type$ -- 54
-change.case$ -- 436
+change.case$ -- 438
 chr.to.int$ -- 0
-cite$ -- 55
-duplicate$ -- 926
-empty$ -- 1795
-format.name$ -- 554
-if$ -- 5313
+cite$ -- 54
+duplicate$ -- 932
+empty$ -- 1804
+format.name$ -- 558
+if$ -- 5353
 int.to.chr$ -- 0
 int.to.str$ -- 54
 missing$ -- 47
@@ -33,18 +34,18 @@ newline$ -- 266
 num.names$ -- 110
 pop$ -- 579
 preamble$ -- 1
-purify$ -- 382
+purify$ -- 384
 quote$ -- 0
-skip$ -- 754
+skip$ -- 760
 stack$ -- 0
-substring$ -- 1328
-swap$ -- 342
-text.length$ -- 25
+substring$ -- 1340
+swap$ -- 348
+text.length$ -- 26
 text.prefix$ -- 0
 top$ -- 0
 type$ -- 216
-warning$ -- 1
-while$ -- 191
+warning$ -- 0
+while$ -- 193
 width$ -- 56
-write$ -- 564
-(There were 2 warnings)
+write$ -- 566
+(There was 1 warning)

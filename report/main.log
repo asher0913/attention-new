@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.4) (preloaded format=pdflatex 2025.12.3)  14 DEC 2025 22:26
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.4) (preloaded format=pdflatex 2025.12.3)  16 DEC 2025 01:41
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -856,26 +856,15 @@ Package hyperref Info: Link coloring OFF on input line 17.
 \@outlinefile=\write4
 \openout4 = `main.out'.
 
+<nottingham-logo.png, id=174, 191.94913pt x 70.8246pt>
+File: nottingham-logo.png Graphic file (type png)
+<use nottingham-logo.png>
+Package pdftex.def Info: nottingham-logo.png  used on input line 25.
+(pdftex.def)             Requested size: 226.48395pt x 83.57118pt.
+ [1
 
-
-LaTeX Warning: File `nottingham-logo.png' not found on input line 25.
-
-
-! Package pdftex.def Error: File `nottingham-logo.png' not found: using draft s
-etting.
-
-See the pdftex.def package documentation for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.25 ...[width=0.5\textwidth]{nottingham-logo.png}
-                                                  
-Try typing  <return>  to proceed.
-If that doesn't work, type  X <return>  to quit.
-
-[1
-
-{C:/Users/zhang/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}] [2]
+{C:/Users/zhang/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map} <./nottingham
+-logo.png>]
 LaTeX Font Info:    Trying to load font information for U+msa on input line 60.
 
 
@@ -888,23 +877,47 @@ LaTeX Font Info:    Trying to load font information for U+msb on input line 60.
 (C:\Users\zhang\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-[3] (main.toc)
+[2] (main.toc)
 \tf@toc=\write5
 \openout5 = `main.toc'.
 
- [4] [5] [6] [7] [8] [9] [10] [11]
+ [3] [4] [5] [6]
+Overfull \hbox (5.14026pt too wide) in paragraph at lines 102--103
+[]\OT1/cmr/bx/n/12 Pruning and Lip-s-chitz con-straints. \OT1/cmr/m/n/12 PA-TRO
+L [[]10[]] prunes chan-nels un-der Lipschitz-
+ []
+
+[7] [8] [9] [10]
 Overfull \hbox (4.23882pt too wide) in paragraph at lines 158--159
 [] []\OT1/cmr/bx/n/12 Ab-la-tion and re-port-ing plan.[] \OT1/cmr/m/n/12 Within
  this pro-to-col, ab-la-tions will vary only surrogate-
  []
 
-[12] [13] [14] [15] [16
+[11] [12] [13]
+<diagram/2.PNG, id=464, 963.6pt x 542.025pt>
+File: diagram/2.PNG Graphic file (type png)
+<use diagram/2.PNG>
+Package pdftex.def Info: diagram/2.PNG  used on input line 333.
+(pdftex.def)             Requested size: 430.31812pt x 242.0481pt.
+ [14] [15
 pdfTeX warning (ext4): destination with the same identifier (name{algocf.1}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.314 \begin{equation}
-                      ] [17] [18]
+l.337 
+      ] [16
+pdfTeX warning (ext4): destination with the same identifier (name{figure.1}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.413 \end{equation}
+                     <./diagram/2.PNG>] [17]
+<diagram/1.PNG, id=548, 963.6pt x 542.025pt>
+File: diagram/1.PNG Graphic file (type png)
+<use diagram/1.PNG>
+Package pdftex.def Info: diagram/1.PNG  used on input line 575.
+(pdftex.def)             Requested size: 452.9679pt x 254.79314pt.
+ [18]
 Overfull \vbox (10.7151pt too high) has occurred while \output is active []
 
 
@@ -913,183 +926,130 @@ pdfTeX warning (ext4): destination with the same identifier (name{algocf.2}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.527 ...n{Numerical Stability and Regularization}
-                                                  ] [20] [21]
-
-LaTeX Warning: File `fig_metrics_overview.png' not found on input line 585.
-
-
-! Package pdftex.def Error: File `fig_metrics_overview.png' not found: using dr
-aft setting.
-
-See the pdftex.def package documentation for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.585 ...0.95\textwidth]{fig_metrics_overview.png}
-                                                  
-Try typing  <return>  to proceed.
-If that doesn't work, type  X <return>  to quit.
-
-[22
-pdfTeX warning (ext4): destination with the same identifier (name{table.1}) has
- been already used, duplicate ignored
-<argument> ...shipout:D \box_use:N \l_shipout_box 
-                                                  \__shipout_drop_firstpage_...
-l.589 
-      ] [23
-pdfTeX warning (ext4): destination with the same identifier (name{figure.1}) ha
-s been already used, duplicate ignored
-<argument> ...shipout:D \box_use:N \l_shipout_box 
-                                                  \__shipout_drop_firstpage_...
-l.595 
-      ]
-
-LaTeX Warning: File `fig_attack_curves.png' not found on input line 598.
-
-
-! Package pdftex.def Error: File `fig_attack_curves.png' not found: using draft
- setting.
-
-See the pdftex.def package documentation for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.598 ...dth=0.6\textwidth]{fig_attack_curves.png}
-                                                  
-Try typing  <return>  to proceed.
-If that doesn't work, type  X <return>  to quit.
-
-[24
+l.578 \end{figure}
+                  ] [20
 pdfTeX warning (ext4): destination with the same identifier (name{figure.2}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.608 
+l.593 
+       <./diagram/1.PNG>] [21]
+<fig_metrics_overview.png, id=652, 939.51pt x 289.08pt>
+File: fig_metrics_overview.png Graphic file (type png)
+<use fig_metrics_overview.png>
+Package pdftex.def Info: fig_metrics_overview.png  used on input line 638.
+(pdftex.def)             Requested size: 452.9679pt x 139.37436pt.
+ [22
+pdfTeX warning (ext4): destination with the same identifier (name{table.1}) has
+ been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.642 
       ]
-
-LaTeX Warning: File `fig_psnr_bar.png' not found on input line 611.
-
-
-! Package pdftex.def Error: File `fig_psnr_bar.png' not found: using draft sett
-ing.
-
-See the pdftex.def package documentation for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.611 ...cs[width=0.6\textwidth]{fig_psnr_bar.png}
-                                                  
-Try typing  <return>  to proceed.
-If that doesn't work, type  X <return>  to quit.
-
-
-LaTeX Warning: File `fig_tradeoff.png' not found on input line 618.
-
-
-! Package pdftex.def Error: File `fig_tradeoff.png' not found: using draft sett
-ing.
-
-See the pdftex.def package documentation for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.618 ...s[width=0.95\textwidth]{fig_tradeoff.png}
-                                                  
-Try typing  <return>  to proceed.
-If that doesn't work, type  X <return>  to quit.
-
-[25
+<fig_attack_curves.png, id=674, 505.89pt x 289.08pt>
+File: fig_attack_curves.png Graphic file (type png)
+<use fig_attack_curves.png>
+Package pdftex.def Info: fig_attack_curves.png  used on input line 651.
+(pdftex.def)             Requested size: 271.7835pt x 155.30688pt.
+ [23
 pdfTeX warning (ext4): destination with the same identifier (name{figure.3}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.622 
-      ] [26
+l.655 
+       <./fig_metrics_overview.png>]
+<fig_psnr_bar.png, id=689, 397.485pt x 289.08pt>
+File: fig_psnr_bar.png Graphic file (type png)
+<use fig_psnr_bar.png>
+Package pdftex.def Info: fig_psnr_bar.png  used on input line 664.
+(pdftex.def)             Requested size: 271.7835pt x 197.66571pt.
+ [24
 pdfTeX warning (ext4): destination with the same identifier (name{figure.4}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.630 
-      ]
-Underfull \hbox (badness 10000) in paragraph at lines 647--647
-[]\OT1/cmr/m/n/10.95 Literature re-view &
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 651--651
-[]\OT1/cmr/m/n/10.95 Method 1: gated-
- []
-
-
-Underfull \hbox (badness 3849) in paragraph at lines 655--655
-[]\OT1/cmr/m/n/10.95 Dec 2025--Feb
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 657--657
-[]\OT1/cmr/m/n/10.95 Cross-dataset eval-u-a-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 657--657
-[]\OT1/cmr/m/n/10.95 Planned: ex-tend pro-to-col be-yond
- []
-
-[27]
-
-LaTeX Warning: File `artifacts/gantt_midterm_proposal.png' not found on input l
-ine 666.
-
-
-! Package pdftex.def Error: File `artifacts/gantt_midterm_proposal.png' not fou
-nd: using draft setting.
-
-See the pdftex.def package documentation for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.666 ...th]{artifacts/gantt_midterm_proposal.png}
-                                                  
-Try typing  <return>  to proceed.
-If that doesn't work, type  X <return>  to quit.
-
-[28
-pdfTeX warning (ext4): destination with the same identifier (name{table.2}) has
- been already used, duplicate ignored
-<argument> ...shipout:D \box_use:N \l_shipout_box 
-                                                  \__shipout_drop_firstpage_...
-l.670 
-      ] [29
+l.668 
+       <./fig_attack_curves.png>]
+<fig_tradeoff.png, id=697, 722.7pt x 289.08pt>
+File: fig_tradeoff.png Graphic file (type png)
+<use fig_tradeoff.png>
+Package pdftex.def Info: fig_tradeoff.png  used on input line 671.
+(pdftex.def)             Requested size: 430.31812pt x 172.12602pt.
+ [25
 pdfTeX warning (ext4): destination with the same identifier (name{figure.5}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.675 
-      ] [30]
-Overfull \hbox (18.00317pt too wide) in paragraph at lines 691--692
-\OT1/cmr/m/n/12 en-tropy sur-ro-gate rather than to other changes. Pri-vacy was
- as-sessed with MSE/SSIM/PSNR
+l.683 
+      
+pdfTeX warning (ext4): destination with the same identifier (name{figure.6}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.683 
+       <./fig_psnr_bar.png> <./fig_tradeoff.png>]
+Underfull \hbox (badness 10000) in paragraph at lines 700--700
+[]\OT1/cmr/m/n/10.95 Literature re-view &
  []
 
-[31] (main.bbl [32
 
-] [33] [34] [35]) [36] (main.aux)
+Underfull \hbox (badness 10000) in paragraph at lines 704--704
+[]\OT1/cmr/m/n/10.95 Method 1: gated-
+ []
+
+
+Underfull \hbox (badness 3849) in paragraph at lines 708--708
+[]\OT1/cmr/m/n/10.95 Dec 2025--Feb
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 710--710
+[]\OT1/cmr/m/n/10.95 Cross-dataset eval-u-a-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 710--710
+[]\OT1/cmr/m/n/10.95 Planned: ex-tend pro-to-col be-yond
+ []
+
+[26]
+<artifacts/gantt_midterm_proposal.png, id=733, 867.24pt x 505.89pt>
+File: artifacts/gantt_midterm_proposal.png Graphic file (type png)
+<use artifacts/gantt_midterm_proposal.png>
+Package pdftex.def Info: artifacts/gantt_midterm_proposal.png  used on input li
+ne 719.
+(pdftex.def)             Requested size: 430.31812pt x 251.02228pt.
+ [27
+pdfTeX warning (ext4): destination with the same identifier (name{table.2}) has
+ been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.726 
+      
+pdfTeX warning (ext4): destination with the same identifier (name{figure.7}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.726 
+       <./artifacts/gantt_midterm_proposal.png>] [28] [29] (main.bbl [30
+
+]
+[31] [32] [33]) [34] (main.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2025-11-06>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: AC553F8F62EDD662A9A914BA108B9566;8301.
+(rerunfilecheck)             Checksum: D7F7AAB44B4ACF7D33DDEA0D0FED227D;8306.
  ) 
 Here is how much of TeX's memory you used:
- 24913 strings out of 467871
- 476119 string characters out of 5418376
- 894641 words of memory out of 5000000
- 53153 multiletter control sequences out of 15000+600000
+ 24792 strings out of 467871
+ 471828 string characters out of 5418376
+ 894944 words of memory out of 5000000
+ 53031 multiletter control sequences out of 15000+600000
  641362 words of font info for 93 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 99i,18n,118p,1673b,598s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 99i,18n,118p,1731b,600s stack positions out of 10000i,1000n,20000p,200000b,200000s
  <C:\Users\zhang\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\tcrm
 1200.pk><C:/Users/zhang/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfon
 ts/cm/cmbx10.pfb><C:/Users/zhang/AppData/Local/Programs/MiKTeX/fonts/type1/publ
@@ -1117,9 +1077,9 @@ msfonts/cm/cmti8.pfb><C:/Users/zhang/AppData/Local/Programs/MiKTeX/fonts/type1/
 public/amsfonts/cm/cmtt10.pfb><C:/Users/zhang/AppData/Local/Programs/MiKTeX/fon
 ts/type1/public/amsfonts/cm/cmtt12.pfb><C:/Users/zhang/AppData/Local/Programs/M
 iKTeX/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
-Output written on main.pdf (36 pages, 518428 bytes).
+Output written on main.pdf (34 pages, 3982004 bytes).
 PDF statistics:
- 935 PDF objects out of 1000 (max. 8388607)
- 233 named destinations out of 1000 (max. 500000)
- 349 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 955 PDF objects out of 1000 (max. 8388607)
+ 234 named destinations out of 1000 (max. 500000)
+ 389 words of extra memory for PDF output out of 10000 (max. 10000000)
 
